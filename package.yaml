@@ -7,7 +7,6 @@ dependencies:
 executables:
   loopnaut:
     main: Loopnaut.hs
-    ghc-options: -threaded -O2
     dependencies:
       - SFML
       - getopt-generics
