@@ -1,7 +1,7 @@
 
 import Data.Vector.Storable as V
 import Prelude hiding (writeFile)
-import Sound.File.Sndfile (getFileInfo, writeFile)
+import Sound.File.Sndfile (getFileInfo, writeFile, samplerate)
 import Sound.File.Sndfile.Buffer.Vector as V
 import System.Random
 
@@ -14,13 +14,13 @@ main = do
 overwrite :: FilePath -> IO ()
 overwrite file = do
   info <- getFileInfo file
-  _ <- writeFile info file =<< mkBuffer
+  _ <- writeFile info file =<< mkBuffer (samplerate info)
   return ()
 
-mkBuffer :: IO (V.Buffer Double)
-mkBuffer = return $ toBuffer vector
+mkBuffer :: Int -> IO (V.Buffer Double)
+mkBuffer samplerate = return $ toBuffer $ vector samplerate
 
-vector = (unfoldr gen initial)
+vector samplerate = (unfoldr (gen samplerate) initial)
 
 data State = State {
   sampleCount :: Int,
@@ -30,16 +30,13 @@ data State = State {
 initial :: State
 initial = State 0 0
 
-samplerate :: Num n => n
-samplerate = 44100
-
-gen :: State -> Maybe (Double, State)
-gen (State sampleCount phase) =
+gen :: Int -> State -> Maybe (Double, State)
+gen samplerate (State sampleCount phase) =
   if sampleCount >= samplerate * 5
     then Nothing
     else Just $
-      let newPhase = foldRadians (phase + tau * 1 / samplerate)
-      in (sin (phase * 140) * 0.5, State (sampleCount + 1) newPhase)
+      let newPhase = foldRadians (phase + tau * 1 / fromIntegral samplerate)
+      in (sin (phase * 180) * 0.1, State (sampleCount + 1) newPhase)
 
 foldRadians :: Double -> Double
 foldRadians x =
