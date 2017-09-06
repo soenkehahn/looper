@@ -7,6 +7,7 @@ import System.Random
 
 main :: IO ()
 main = do
+  putStr "generating..."
   overwrite "loop.wav"
   putStrLn "done"
 
@@ -38,7 +39,7 @@ gen (State sampleCount phase) =
     then Nothing
     else Just $
       let newPhase = foldRadians (phase + tau * 1 / samplerate)
-      in (sin (phase * 150) * 0.3, State (sampleCount + 1) newPhase)
+      in (sin (phase * 140) * 0.5, State (sampleCount + 1) newPhase)
 
 foldRadians :: Double -> Double
 foldRadians x =
