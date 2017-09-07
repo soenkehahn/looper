@@ -3,7 +3,7 @@
 import Loopnaut.Utils
 
 main :: IO ()
-main = generateLoop "loop.wav" loop
+main = generateLoop "loop.wav" 5 loop
 
 loop :: Generator
 loop phase = mix (map (\freq -> sin (phase * freq) * 0.2) [200, 300, 400, 500])

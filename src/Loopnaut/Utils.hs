@@ -21,24 +21,30 @@ initial = State 0 0
 
 type Generator = Double -> Double
 
-generateLoop :: FilePath -> Generator -> IO ()
-generateLoop file generator = do
+generateLoop :: FilePath -> Rational -> Generator -> IO ()
+generateLoop file seconds generator = do
   putStr ("generating " <> file <> "...")
   info <- getFileInfo file
-  _ <- writeFile info file $ mkBuffer generator (fromIntegral (samplerate info))
+  _ <-
+    writeFile info file $
+    mkBuffer seconds (fromIntegral (samplerate info)) generator
   putStrLn "done"
 
-mkBuffer :: Generator -> Integer -> V.Buffer Double
-mkBuffer generator samplerate =
-  toBuffer $ (unfoldr (runGenerator generator samplerate) initial)
+mkBuffer :: Rational -> Integer -> Generator -> V.Buffer Double
+mkBuffer seconds samplerate generator =
+  toBuffer $ (unfoldr (runGenerator seconds samplerate generator) initial)
 
-runGenerator :: Generator -> Integer -> State -> Maybe (Double, State)
-runGenerator generator samplerate (State loopTime phase) =
+runGenerator ::
+     Rational -> Integer -> Generator -> State -> Maybe (Double, State)
+runGenerator seconds samplerate generator (State loopTime phase) =
   if loopTime >= 1
     then Nothing
     else Just $
          let newPhase = foldRadians (phase + tau * 1 / fromIntegral samplerate)
-         in (generator phase, State (loopTime + 1 % (5 * samplerate)) newPhase)
+         in ( generator phase
+            , State
+                (loopTime + 1 / (seconds * fromIntegral samplerate))
+                newPhase)
 
 -- * math
 tau :: Double

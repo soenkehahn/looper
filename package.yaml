@@ -16,5 +16,20 @@ executables:
     dependencies:
       - hsndfile
       - hsndfile-vector
-      - vector
       - random
+      - vector
+
+tests:
+  spec:
+    main: Spec.hs
+    source-dirs:
+      - test
+    dependencies:
+      - bytestring
+      - directory
+      - filepath
+      - hsndfile
+      - hsndfile-vector
+      - hspec
+      - mockery
+      - vector
