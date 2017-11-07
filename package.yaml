@@ -7,9 +7,11 @@ dependencies:
 executables:
   loopnaut:
     main: Loopnaut.hs
-    dependencies:
-      - SFML
-      - getopt-generics
+    dependencies: []
+    c-sources:
+      - src/foo.c
+    extra-libraries:
+      - jack
 
   generate:
     main: Generate.hs
