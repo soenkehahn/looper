@@ -1,16 +1,21 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
+module Loopnaut where
+
 import Control.Monad
 import Control.Concurrent
-import Foreign.C.Types
-import Foreign.Ptr
-import Foreign.Marshal.Array
 import CBindings
+import Foreign.C.Types
+import Foreign.Marshal.Array
+
+loopBuffer :: CBindings -> [CFloat] -> IO ()
+loopBuffer bindings buffer = do
+  let len = length buffer
+  array <- mallocArray len
+  pokeArray array buffer
+  loop_buffer bindings array len
 
 main :: IO ()
 main = do
-  let len = 90
-  array <- mallocArray len
-  pokeArray array $ take len [0, 1 / 90 ..]
-  loop_buffer cBindings array len
+  loopBuffer cBindings $ take 100 [0, 0.01 ..]
   forever $ threadDelay 1000000

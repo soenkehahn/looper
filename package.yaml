@@ -6,12 +6,12 @@ dependencies:
 
 executables:
   loopnaut:
-    main: Loopnaut.hs
-    dependencies: []
+    main: loopnaut-exec.hs
     c-sources:
       - src/foo.c
     extra-libraries:
       - jack
+    dependencies: []
 
   generate:
     main: Generate.hs
@@ -26,6 +26,10 @@ tests:
     main: Spec.hs
     source-dirs:
       - test
+    c-sources:
+      - src/foo.c
+    extra-libraries:
+      - jack
     dependencies:
       - bytestring
       - directory
