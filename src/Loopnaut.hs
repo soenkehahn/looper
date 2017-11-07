@@ -5,13 +5,12 @@ import Control.Concurrent
 import Foreign.C.Types
 import Foreign.Ptr
 import Foreign.Marshal.Array
+import CBindings
 
 main :: IO ()
 main = do
   let len = 90
   array <- mallocArray len
   pokeArray array $ take len [0, 1 / 90 ..]
-  c_loop_buffer array len
+  loop_buffer cBindings array len
   forever $ threadDelay 1000000
-
-foreign import ccall "loop_buffer" c_loop_buffer :: Ptr CFloat -> Int -> IO ()
