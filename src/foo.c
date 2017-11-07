@@ -9,32 +9,25 @@
 jack_port_t *output_port1, *output_port2;
 jack_client_t *client;
 
-float phase = 0;
+float* g_buffer;
+int g_length;
+int g_index;
 
-float pi = 3.14159265358979323846264338327950288419716939937;
-
-float clamp(float input) {
-  if (input >=  2 * pi) {
-    return clamp(input - 2 * pi);
-  } else {
-    return input;
-  }
-}
-
-int process(jack_nframes_t nframes, void *arg) {
-  jack_default_audio_sample_t *out1, *out2;
+int process(jack_nframes_t nframes, void* arg) {
+  jack_default_audio_sample_t* out1, * out2;
 
   out1 = (jack_default_audio_sample_t*) jack_port_get_buffer(output_port1, nframes);
   out2 = (jack_default_audio_sample_t*) jack_port_get_buffer(output_port2, nframes);
 
-
-  int i;
-  for( i=0; i<nframes; i++ ) {
-    phase = phase + (2 * pi / 48000);
-    phase = clamp(phase);
-    float output = sin(phase * 440);
+  for(int i = 0; i < nframes; i++) {
+    float output = g_buffer[g_index];
     out1[i] = output;
     out2[i] = output;
+
+    g_index++;
+    if (g_index >= g_length) {
+      g_index = 0;
+    }
   }
 
   return 0;
@@ -45,7 +38,11 @@ void jack_shutdown(void *arg) {
   exit(1);
 }
 
-void start_sine() {
+void loop_buffer(float* buffer, int length) {
+  g_buffer = buffer;
+  g_length = length;
+  g_index = 0;
+
   const char *client_name = "foo";
   const char *server_name = NULL;
   jack_options_t options = JackNullOption;
