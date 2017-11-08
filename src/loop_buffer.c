@@ -1,9 +1,5 @@
 #include <stdio.h>
-#include <errno.h>
 #include <stdlib.h>
-#include <string.h>
-#include <math.h>
-#include <unistd.h>
 #include <jack/jack.h>
 
 jack_port_t *output_port1, *output_port2;
