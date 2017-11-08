@@ -5,24 +5,27 @@
 jack_port_t *output_port1, *output_port2;
 jack_client_t *client;
 
-float* g_buffer;
-int g_length;
-int g_index;
+struct buffer {
+  float* array;
+  int length;
+  int index;
+};
 
 int process(jack_nframes_t nframes, void* arg) {
-  jack_default_audio_sample_t* out1, * out2;
+  struct buffer* buffer = arg;
 
+  jack_default_audio_sample_t* out1, * out2;
   out1 = (jack_default_audio_sample_t*) jack_port_get_buffer(output_port1, nframes);
   out2 = (jack_default_audio_sample_t*) jack_port_get_buffer(output_port2, nframes);
 
   for(int i = 0; i < nframes; i++) {
-    float output = g_buffer[g_index];
+    float output = buffer->array[buffer->index];
     out1[i] = output;
     out2[i] = output;
 
-    g_index++;
-    if (g_index >= g_length) {
-      g_index = 0;
+    buffer->index++;
+    if (buffer->index >= buffer->length) {
+      buffer->index = 0;
     }
   }
 
@@ -34,10 +37,11 @@ void jack_shutdown(void *arg) {
   exit(1);
 }
 
-void loop_buffer(float* buffer, int length) {
-  g_buffer = buffer;
-  g_length = length;
-  g_index = 0;
+void loop_buffer(float* array, int length) {
+  struct buffer* buffer = malloc(sizeof(buffer));
+  buffer->array = array;
+  buffer->length = length;
+  buffer->index = 0;
 
   const char *client_name = "foo";
   const char *server_name = NULL;
@@ -62,7 +66,7 @@ void loop_buffer(float* buffer, int length) {
     fprintf(stderr, "unique name `%s' assigned\n", client_name);
   }
 
-  jack_set_process_callback(client, process, NULL);
+  jack_set_process_callback(client, process, buffer);
 
   jack_on_shutdown(client, jack_shutdown, 0);
 
