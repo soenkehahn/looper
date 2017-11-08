@@ -8,7 +8,7 @@ executables:
   loopnaut:
     main: loopnaut-exec.hs
     c-sources:
-      - src/foo.c
+      - src/loop_buffer.c
     extra-libraries:
       - jack
     dependencies: []
@@ -27,7 +27,7 @@ tests:
     source-dirs:
       - test
     c-sources:
-      - src/foo.c
+      - src/loop_buffer.c
     extra-libraries:
       - jack
     dependencies:
