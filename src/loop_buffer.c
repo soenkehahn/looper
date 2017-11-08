@@ -3,7 +3,6 @@
 #include <jack/jack.h>
 
 jack_port_t *output_port1, *output_port2;
-jack_client_t *client;
 
 struct buffer {
   float* array;
@@ -37,17 +36,13 @@ void jack_shutdown(void *arg) {
   exit(1);
 }
 
-void loop_buffer(float* array, int length) {
-  struct buffer* buffer = malloc(sizeof(buffer));
-  buffer->array = array;
-  buffer->length = length;
-  buffer->index = 0;
-
+jack_client_t* init_client() {
   const char *client_name = "foo";
   const char *server_name = NULL;
   jack_options_t options = JackNullOption;
   jack_status_t status;
 
+  jack_client_t *client;
   client = jack_client_open(client_name, options, &status, server_name);
   if (client == NULL) {
     fprintf(stderr, "jack_client_open() failed, status = 0x%2.0x\n", status);
@@ -66,9 +61,20 @@ void loop_buffer(float* array, int length) {
     fprintf(stderr, "unique name `%s' assigned\n", client_name);
   }
 
-  jack_set_process_callback(client, process, buffer);
-
   jack_on_shutdown(client, jack_shutdown, 0);
+
+  return client;
+}
+
+struct buffer* loop_buffer(float* array, int length) {
+  struct buffer* buffer = malloc(sizeof(buffer));
+  buffer->array = array;
+  buffer->length = length;
+  buffer->index = 0;
+
+  jack_client_t* client = init_client();
+
+  jack_set_process_callback(client, process, buffer);
 
   output_port1 = jack_port_register(client, "output1",
     JACK_DEFAULT_AUDIO_TYPE,
@@ -87,4 +93,12 @@ void loop_buffer(float* array, int length) {
     fprintf(stderr, "cannot activate client");
     exit(1);
   }
+
+  return buffer;
+}
+
+void set_buffer(struct buffer* buffer, float* array, int length) {
+  buffer->array = array;
+  buffer->length = length;
+  buffer->index = 0;
 }

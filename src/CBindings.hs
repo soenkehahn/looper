@@ -1,5 +1,5 @@
 
-module CBindings (CBindings(..), cBindings) where
+module CBindings where
 
 import Control.Monad
 import Control.Concurrent
@@ -7,13 +7,9 @@ import Foreign.C.Types
 import Foreign.Ptr
 import Foreign.Marshal.Array
 
+data Buffer
+
 data CBindings = CBindings {
-  loop_buffer :: Ptr CFloat -> Int -> IO ()
+  loop_buffer :: Ptr CFloat -> Int -> IO (Ptr Buffer),
+  set_buffer :: Ptr Buffer -> Ptr CFloat -> Int -> IO ()
 }
-
-cBindings :: CBindings
-cBindings = CBindings {
-  loop_buffer = c_loop_buffer
-}
-
-foreign import ccall "loop_buffer" c_loop_buffer :: Ptr CFloat -> Int -> IO ()
