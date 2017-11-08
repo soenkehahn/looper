@@ -7,9 +7,9 @@ import Foreign.C.Types
 import Foreign.Ptr
 import Foreign.Marshal.Array
 
-data Buffer
+data CLoopnaut
 
 data CBindings = CBindings {
-  loop_buffer :: Ptr CFloat -> Int -> IO (Ptr Buffer),
-  set_buffer :: Ptr Buffer -> Ptr CFloat -> Int -> IO ()
+  create_loopnaut :: IO (Ptr CLoopnaut),
+  set_buffer :: Ptr CLoopnaut -> Ptr CFloat -> Int -> IO ()
 }

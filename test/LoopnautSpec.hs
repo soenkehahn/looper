@@ -10,28 +10,32 @@ import Loopnaut
 
 spec :: Spec
 spec = do
-  describe "loopBuffer" $ do
+  describe "setBuffer" $ do
     it "plays back a buffer" $ do
       mockBuffer <- newIORef (error "uninitialized mockBuffer")
       let mockBindings = CBindings {
-        loop_buffer = \ buffer length -> do
-          writeIORef mockBuffer (buffer, length)
-          return (error "mock Ptr Buffer")
+        create_loopnaut = do
+          return (error "mock Ptr Buffer"),
+        set_buffer = \ _ buffer len -> do
+          writeIORef mockBuffer (buffer, len)
       }
-      loopBuffer mockBindings [1, 2, 3]
+      buffer <- create mockBindings
+      setBuffer mockBindings buffer [1, 2, 3]
       (array, len) <- readIORef mockBuffer
       len `shouldBe` 3
       peekArray 3 array `shouldReturn` [1, 2, 3]
 
-  describe "setBuffer" $ do
     it "allows to set a new buffer" $ do
       mockBuffer <- newIORef (error "uninitialized mockBuffer")
       let mockBindings = CBindings {
-        set_buffer = \ _ buffer length -> do
-          writeIORef mockBuffer (buffer, length)
-          return ()
+        create_loopnaut = do
+          return (error "mock Ptr Buffer"),
+        set_buffer = \ _ buffer len -> do
+          writeIORef mockBuffer (buffer, len)
       }
-      setBuffer mockBindings (error "mock buffer") [1, 2, 3]
+      buffer <- create mockBindings
+      setBuffer mockBindings buffer [1, 2, 3]
+      setBuffer mockBindings buffer [4, 5, 6, 7]
       (array, len) <- readIORef mockBuffer
-      len `shouldBe` 3
-      peekArray 3 array `shouldReturn` [1, 2, 3]
+      len `shouldBe` 4
+      peekArray 4 array `shouldReturn` [4, 5, 6, 7]

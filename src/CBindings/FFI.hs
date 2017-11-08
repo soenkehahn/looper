@@ -5,12 +5,12 @@ import CBindings
 import Foreign.Ptr
 import Foreign.C.Types
 
-foreign import ccall "loop_buffer" c_loop_buffer :: Ptr CFloat -> Int -> IO (Ptr Buffer)
+foreign import ccall "create_loopnaut" c_create_loopnaut :: IO (Ptr CLoopnaut)
 
-foreign import ccall "set_buffer" c_set_buffer :: Ptr Buffer -> Ptr CFloat -> Int -> IO ()
+foreign import ccall "set_buffer" c_set_buffer :: Ptr CLoopnaut -> Ptr CFloat -> Int -> IO ()
 
 cBindings :: CBindings
 cBindings = CBindings {
-  loop_buffer = c_loop_buffer,
+  create_loopnaut = c_create_loopnaut,
   set_buffer = c_set_buffer
 }

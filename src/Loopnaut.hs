@@ -10,6 +10,9 @@ import Foreign.Marshal.Array
 import Foreign.Ptr
 import Foreign.Storable
 
+create :: CBindings -> IO (Ptr CLoopnaut)
+create = create_loopnaut
+
 allocateList :: Storable a => [a] -> IO (Ptr a, Int)
 allocateList list = do
   let len = length list
@@ -17,19 +20,15 @@ allocateList list = do
   pokeArray array list
   return (array, len)
 
-loopBuffer :: CBindings -> [CFloat] -> IO (Ptr Buffer)
-loopBuffer bindings list = do
-  (array, len) <- allocateList list
-  loop_buffer bindings array len
-
-setBuffer :: CBindings -> Ptr Buffer -> [CFloat] -> IO ()
+setBuffer :: CBindings -> Ptr CLoopnaut -> [CFloat] -> IO ()
 setBuffer bindings buffer list = do
   (array, len) <- allocateList list
   set_buffer bindings buffer array len
 
 main :: CBindings -> IO ()
 main bindings = do
-  buffer <- loopBuffer bindings $ take 100 [0, 0.01 ..]
-  threadDelay 2000000
+  buffer <- create bindings
+  setBuffer bindings buffer $ take 100 [0, 0.01 ..]
+  threadDelay 1000000
   setBuffer bindings buffer [0.4]
-  forever $ threadDelay 1000000
+  threadDelay 1000000

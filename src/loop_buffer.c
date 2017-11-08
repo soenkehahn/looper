@@ -4,27 +4,27 @@
 
 jack_port_t *output_port1, *output_port2;
 
-struct buffer {
+struct loopnaut {
   float* array;
   int length;
   int index;
 };
 
 int process(jack_nframes_t nframes, void* arg) {
-  struct buffer* buffer = arg;
+  struct loopnaut* loopnaut = arg;
 
   jack_default_audio_sample_t* out1, * out2;
   out1 = (jack_default_audio_sample_t*) jack_port_get_buffer(output_port1, nframes);
   out2 = (jack_default_audio_sample_t*) jack_port_get_buffer(output_port2, nframes);
 
   for(int i = 0; i < nframes; i++) {
-    float output = buffer->array[buffer->index];
+    float output = loopnaut->array[loopnaut->index];
     out1[i] = output;
     out2[i] = output;
 
-    buffer->index++;
-    if (buffer->index >= buffer->length) {
-      buffer->index = 0;
+    loopnaut->index++;
+    if (loopnaut->index >= loopnaut->length) {
+      loopnaut->index = 0;
     }
   }
 
@@ -66,15 +66,17 @@ jack_client_t* init_client() {
   return client;
 }
 
-struct buffer* loop_buffer(float* array, int length) {
-  struct buffer* buffer = malloc(sizeof(buffer));
-  buffer->array = array;
-  buffer->length = length;
-  buffer->index = 0;
+struct loopnaut* create_loopnaut() {
+  struct loopnaut* loopnaut = malloc(sizeof(loopnaut));
+  float* array = malloc(sizeof(float));
+  array[0] = 0;
+  loopnaut->array = array;
+  loopnaut->length = 1;
+  loopnaut->index = 0;
 
   jack_client_t* client = init_client();
 
-  jack_set_process_callback(client, process, buffer);
+  jack_set_process_callback(client, process, loopnaut);
 
   output_port1 = jack_port_register(client, "output1",
     JACK_DEFAULT_AUDIO_TYPE,
@@ -94,11 +96,13 @@ struct buffer* loop_buffer(float* array, int length) {
     exit(1);
   }
 
-  return buffer;
+  return loopnaut;
 }
 
-void set_buffer(struct buffer* buffer, float* array, int length) {
-  buffer->array = array;
-  buffer->length = length;
-  buffer->index = 0;
+void set_buffer(struct loopnaut* loopnaut, float* array, int length) {
+  free(loopnaut->array);
+
+  loopnaut->array = array;
+  loopnaut->length = length;
+  loopnaut->index = 0;
 }
