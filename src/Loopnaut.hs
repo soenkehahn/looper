@@ -28,7 +28,14 @@ setBuffer bindings buffer list = do
 main :: CBindings -> IO ()
 main bindings = do
   buffer <- create bindings
-  setBuffer bindings buffer $ take 100 [0, 0.01 ..]
+  setBuffer bindings buffer $
+    map (\ phase -> sin (phase * 300)) $
+    [0, tau / 48000 .. tau]
   threadDelay 1000000
-  setBuffer bindings buffer [0.4]
+  setBuffer bindings buffer $
+    map (\ phase -> sin (phase * 400)) $
+    [0, tau / 48000 .. tau]
   threadDelay 1000000
+
+tau :: CFloat
+tau = pi * 2
