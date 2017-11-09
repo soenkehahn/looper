@@ -100,9 +100,11 @@ struct loopnaut* create_loopnaut() {
 }
 
 void set_buffer(struct loopnaut* loopnaut, float* array, int length) {
-  free(loopnaut->array);
+  float* old = loopnaut->array;
 
   loopnaut->array = array;
   loopnaut->length = length;
   loopnaut->index = 0;
+
+  free(old);
 }
