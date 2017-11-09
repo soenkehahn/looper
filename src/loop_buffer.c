@@ -37,7 +37,7 @@ void jack_shutdown(void *arg) {
 }
 
 jack_client_t* init_client() {
-  const char *client_name = "foo";
+  const char *client_name = "loopnaut";
   const char *server_name = NULL;
   jack_options_t options = JackNullOption;
   jack_status_t status;
