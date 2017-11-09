@@ -29,13 +29,16 @@ main :: CBindings -> IO ()
 main bindings = do
   loopnaut <- create bindings
   setBuffer bindings loopnaut $
-    map (\ phase -> sin (phase * 300)) $
-    [0, tau / 48000 .. tau]
+    map (\ phase -> 0.5 * sin (phase * 300)) $
+    rep 5 [0, tau / 48000 .. tau]
   threadDelay 1000000
   setBuffer bindings loopnaut $
-    map (\ phase -> sin (phase * 400)) $
+    map (\ phase -> 0.5 * sin (phase * 400)) $
     [0, tau / 48000 .. tau]
-  threadDelay 1000000
+  threadDelay 10000000
 
 tau :: CFloat
 tau = pi * 2
+
+rep :: Int -> [a] -> [a]
+rep n list = mconcat $ replicate n list

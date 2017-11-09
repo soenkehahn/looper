@@ -6,9 +6,50 @@ jack_port_t *output_port1, *output_port2;
 
 struct loopnaut {
   float* array;
-  int length;
   int index;
+  int length;
+  struct loopnaut* next;
 };
+
+// struct loopnaut* create_array_loopnaut(float* array, int length) {
+// }
+
+struct loopnaut* create_empty_loopnaut() {
+  struct loopnaut* result = malloc(sizeof(struct loopnaut));
+  float array[1] = {0.0};
+  result->array = array;
+  result->index = 0;
+  result->length = 1;
+  result->next = NULL;
+  return result;
+}
+
+void set_buffer(struct loopnaut* loopnaut, float* array, int length) {
+  struct loopnaut* next = malloc(sizeof(struct loopnaut));
+  next->array = array;
+  next->index = 0;
+  next->length = length;
+  next->next = NULL;
+  loopnaut->next = next;
+}
+
+float get_next_sample(struct loopnaut* loopnaut) {
+  float result = loopnaut->array[loopnaut->index];
+  loopnaut->index++;
+  if (loopnaut->index >= loopnaut->length) {
+    if (loopnaut->next == NULL) {
+      loopnaut->index = 0;
+    } else {
+      loopnaut->array = loopnaut->next->array;
+      loopnaut->index = loopnaut->next->index;
+      loopnaut->length = loopnaut->next->length;
+      loopnaut->next = NULL;
+    }
+  }
+  return result;
+}
+
+// jack stuff
 
 int process(jack_nframes_t nframes, void* arg) {
   struct loopnaut* loopnaut = arg;
@@ -18,14 +59,9 @@ int process(jack_nframes_t nframes, void* arg) {
   out2 = (jack_default_audio_sample_t*) jack_port_get_buffer(output_port2, nframes);
 
   for(int i = 0; i < nframes; i++) {
-    float output = loopnaut->array[loopnaut->index];
+    float output = get_next_sample(loopnaut);
     out1[i] = output;
     out2[i] = output;
-
-    loopnaut->index++;
-    if (loopnaut->index >= loopnaut->length) {
-      loopnaut->index = 0;
-    }
   }
 
   return 0;
@@ -67,12 +103,7 @@ jack_client_t* init_client() {
 }
 
 struct loopnaut* create_loopnaut() {
-  struct loopnaut* loopnaut = malloc(sizeof(loopnaut));
-  float* array = malloc(sizeof(float));
-  array[0] = 0;
-  loopnaut->array = array;
-  loopnaut->length = 1;
-  loopnaut->index = 0;
+  struct loopnaut* loopnaut = create_empty_loopnaut();
 
   jack_client_t* client = init_client();
 
@@ -92,19 +123,9 @@ struct loopnaut* create_loopnaut() {
   }
 
   if (jack_activate(client)) {
-    fprintf(stderr, "cannot activate client");
+    fprintf(stderr, "cannot activate client\n");
     exit(1);
   }
 
   return loopnaut;
-}
-
-void set_buffer(struct loopnaut* loopnaut, float* array, int length) {
-  float* old = loopnaut->array;
-
-  loopnaut->array = array;
-  loopnaut->length = length;
-  loopnaut->index = 0;
-
-  free(old);
 }

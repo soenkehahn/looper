@@ -39,3 +39,4 @@ tests:
       - hspec
       - mockery
       - vector
+      - process
