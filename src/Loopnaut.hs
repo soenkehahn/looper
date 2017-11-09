@@ -21,18 +21,18 @@ allocateList list = do
   return (array, len)
 
 setBuffer :: CBindings -> Ptr CLoopnaut -> [CFloat] -> IO ()
-setBuffer bindings buffer list = do
+setBuffer bindings loopnaut list = do
   (array, len) <- allocateList list
-  set_buffer bindings buffer array len
+  set_buffer bindings loopnaut array len
 
 main :: CBindings -> IO ()
 main bindings = do
-  buffer <- create bindings
-  setBuffer bindings buffer $
+  loopnaut <- create bindings
+  setBuffer bindings loopnaut $
     map (\ phase -> sin (phase * 300)) $
     [0, tau / 48000 .. tau]
   threadDelay 1000000
-  setBuffer bindings buffer $
+  setBuffer bindings loopnaut $
     map (\ phase -> sin (phase * 400)) $
     [0, tau / 48000 .. tau]
   threadDelay 1000000
