@@ -3,10 +3,7 @@ module LoopBufferSpec where
 
 import Test.Hspec
 import Control.Exception
-import Foreign.Ptr
-import Foreign.C.Types
 import System.Process
-import CBindings
 
 spec :: Spec
 spec = do

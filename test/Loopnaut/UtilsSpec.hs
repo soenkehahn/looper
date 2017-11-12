@@ -3,8 +3,6 @@
 
 module Loopnaut.UtilsSpec where
 
-import Data.ByteString as BS
-import Data.List
 import Data.Ratio
 import Data.Vector.Storable as V
 import Loopnaut.Utils

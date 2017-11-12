@@ -3,8 +3,6 @@
 
 module Loopnaut where
 
-import Control.Monad
-import Control.Concurrent
 import CBindings
 import Foreign.C.Types
 import Foreign.Marshal.Array
@@ -38,10 +36,12 @@ instance HasArguments CliArgs
 run :: CBindings -> CliArgs -> IO ()
 run bindings cliArgs = do
   let CliArgs file = cliArgs
-  (info, mBuffer :: Maybe (BV.Buffer Double)) <- Snd.readFile file
+  (_info, mBuffer :: Maybe (BV.Buffer Double)) <- Snd.readFile file
   case mBuffer of
     Just fileContent -> do
       loopnaut <- create bindings
       let sampleList =
             map realToFrac (toList (BV.fromBuffer fileContent))
       setBuffer bindings loopnaut sampleList
+    Nothing -> do
+      error "file empty"

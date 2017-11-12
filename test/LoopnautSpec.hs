@@ -34,7 +34,7 @@ spec = do
       len `shouldBe` 1487
       take 3 array `shouldBe` [1.9686777e-2,5.7297602e-2,9.422311e-2]
 
-withMockBindings :: (CBindings -> IO a) -> IO ([CFloat], Int)
+withMockBindings :: (CBindings -> IO ()) -> IO ([CFloat], Int)
 withMockBindings action = do
   mockBuffer <- newIORef (error "uninitialized mockBuffer")
   let mockBindings = CBindings {

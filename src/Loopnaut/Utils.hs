@@ -12,8 +12,8 @@ import Sound.File.Sndfile.Buffer.Vector as V
 
 -- * state
 data State = State
-  { loopTime :: Rational
-  , phase :: Double
+  { _loopTime :: Rational
+  , _phase :: Double
   }
 
 initial :: State

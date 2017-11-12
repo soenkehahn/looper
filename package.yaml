@@ -3,6 +3,9 @@ name: loopnaut
 source-dirs: src
 dependencies:
   - base
+ghc-options:
+  - -Wall
+  - -Wno-name-shadowing
 
 executables:
   loopnaut:

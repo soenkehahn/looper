@@ -1,11 +1,8 @@
 
 module CBindings where
 
-import Control.Monad
-import Control.Concurrent
 import Foreign.C.Types
 import Foreign.Ptr
-import Foreign.Marshal.Array
 
 data CLoopnaut
 
