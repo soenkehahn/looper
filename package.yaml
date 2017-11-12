@@ -19,6 +19,8 @@ executables:
       - hsndfile
       - hsndfile-vector
       - vector
+      - hinotify
+      - filepath
 
   generate:
     main: Generate.hs
@@ -48,3 +50,5 @@ tests:
       - vector
       - process
       - getopt-generics
+      - hinotify
+      - shake

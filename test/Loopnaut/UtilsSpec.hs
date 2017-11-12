@@ -18,7 +18,7 @@ spec = do
   describe "generateLoop" $ do
     it "writes a soundfile to disk" $ do
       repoDir <- getCurrentDirectory
-      let testFile = repoDir </> "test/test-sound.wav"
+      let testFile = repoDir </> "test/test-sound-1.wav"
       inTempDirectory $ do
         copyFile testFile "foo.wav"
         generateLoop "foo.wav" (1 % 50) (\_ -> 0.25)
