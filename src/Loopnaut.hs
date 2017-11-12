@@ -1,4 +1,5 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module Loopnaut where
 
@@ -9,6 +10,10 @@ import Foreign.C.Types
 import Foreign.Marshal.Array
 import Foreign.Ptr
 import Foreign.Storable
+import Sound.File.Sndfile as Snd
+import qualified Sound.File.Sndfile.Buffer.Vector as BV
+import Data.Vector.Storable (toList)
+import WithCli
 
 create :: CBindings -> IO (Ptr CLoopnaut)
 create = create_loopnaut
@@ -25,20 +30,18 @@ setBuffer bindings loopnaut list = do
   (array, len) <- allocateList list
   set_buffer bindings loopnaut array len
 
-main :: CBindings -> IO ()
-main bindings = do
-  loopnaut <- create bindings
-  setBuffer bindings loopnaut $
-    map (\ phase -> 0.5 * sin (phase * 300)) $
-    rep 5 [0, tau / 48000 .. tau]
-  threadDelay 1000000
-  setBuffer bindings loopnaut $
-    map (\ phase -> 0.5 * sin (phase * 400)) $
-    [0, tau / 48000 .. tau]
-  threadDelay 10000000
+data CliArgs = CliArgs FilePath
+  deriving (Show, Generic)
 
-tau :: CFloat
-tau = pi * 2
+instance HasArguments CliArgs
 
-rep :: Int -> [a] -> [a]
-rep n list = mconcat $ replicate n list
+run :: CBindings -> CliArgs -> IO ()
+run bindings cliArgs = do
+  let CliArgs file = cliArgs
+  (info, mBuffer :: Maybe (BV.Buffer Double)) <- Snd.readFile file
+  case mBuffer of
+    Just fileContent -> do
+      loopnaut <- create bindings
+      let sampleList =
+            map realToFrac (toList (BV.fromBuffer fileContent))
+      setBuffer bindings loopnaut sampleList

@@ -1,6 +1,11 @@
 
-import qualified Loopnaut
+import Loopnaut
 import CBindings.FFI
+import WithCli
+import Control.Monad
+import Control.Concurrent
 
 main :: IO ()
-main = Loopnaut.main cBindings
+main = do
+  withCli (run cBindings)
+  forever $ threadDelay 1000000

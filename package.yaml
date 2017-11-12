@@ -11,7 +11,11 @@ executables:
       - src/loop_buffer.c
     extra-libraries:
       - jack
-    dependencies: []
+    dependencies:
+      - getopt-generics
+      - hsndfile
+      - hsndfile-vector
+      - vector
 
   generate:
     main: Generate.hs
@@ -40,3 +44,4 @@ tests:
       - mockery
       - vector
       - process
+      - getopt-generics
