@@ -3,7 +3,6 @@
 
 module Loopnaut.UtilsSpec where
 
-import Data.Ratio
 import Data.Vector.Storable as V
 import Loopnaut.Utils
 import Sound.File.Sndfile as SF (readFile)
@@ -15,12 +14,12 @@ import Test.Mockery.Directory
 
 spec :: Spec
 spec = do
-  describe "generateLoop" $ do
+  describe "writeSndFile" $ do
     it "writes a soundfile to disk" $ do
       repoDir <- getCurrentDirectory
       let testFile = repoDir </> "test/test-sound-1.wav"
       inTempDirectory $ do
         copyFile testFile "foo.wav"
-        generateLoop "foo.wav" (1 % 50) (\_ -> 0.25)
+        writeSndFile "foo.wav" [0.25, 0.25]
         (_, Just buffer) <- SF.readFile "foo.wav"
         V.forM_ (fromBuffer buffer) $ \(n :: Double) -> n `shouldBe` 0.25
