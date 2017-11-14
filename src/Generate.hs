@@ -1,3 +1,6 @@
+#!/usr/bin/env stack
+{- stack runghc --resolver=lts-9.3 -}
+
 {-# OPTIONS_GHC -Wall  -Werror #-}
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
 {-# OPTIONS_GHC -Wno-missing-signatures #-}
@@ -5,13 +8,26 @@
 {-# OPTIONS_GHC -Wno-type-defaults #-}
 {-# LANGUAGE LambdaCase #-}
 
-import Loopnaut.Utils
 import System.Random hiding (random)
 import Data.Function
+import qualified Data.Vector.Storable as V
+import Sound.File.Sndfile.Buffer.Vector as V
+import Sound.File.Sndfile
+import Prelude hiding (writeFile)
+import Data.Monoid
 
 main :: IO ()
 main = do
   writeSndFile "loop.wav" loop
+
+type Generator = [Double]
+
+writeSndFile :: FilePath -> Generator -> IO ()
+writeSndFile file generator = do
+  putStr ("generating " <> file <> "...")
+  info <- getFileInfo file
+  _ <- writeFile info file $ V.toBuffer $ V.fromList generator
+  putStrLn "done"
 
 loop :: Generator
 loop = d-z-z-d-s-z-(d+c)-s-d-z-d-p-(d+c)-z-(d+c)-p
