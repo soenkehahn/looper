@@ -22,14 +22,6 @@ executables:
       - hinotify
       - filepath
 
-  generate:
-    main: Generate.hs
-    dependencies:
-      - hsndfile
-      - hsndfile-vector
-      - random
-      - vector
-
 tests:
   spec:
     main: Spec.hs
