@@ -46,7 +46,7 @@ spec = do
     it "does not terminate" $ do
       _ <- withMockBindings $ \ bindings -> do
         result <- timeout 20000 $
-          run bindings (CliArgs "test/test-sound-1.wav")
+          run bindings (CliArgs (File "test/test-sound-1.wav"))
         result `shouldBe` Nothing
       return ()
 
@@ -85,7 +85,7 @@ testWhileLoopnautIsRunning action = do
         unit $ cmd "cp" (repoDir </> "test/test-sound-2.wav") "test-sound-2.wav"
         unit $ cmd "cp test-sound-1.wav current.wav"
         _ <- forkIO action
-        run bindings (CliArgs "current.wav")
+        run bindings (CliArgs (File"current.wav"))
 
 withMockBindings :: (CBindings -> IO ()) -> IO [([CFloat], Int)]
 withMockBindings action = do
