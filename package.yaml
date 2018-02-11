@@ -15,12 +15,12 @@ executables:
     extra-libraries:
       - jack
     dependencies:
+      - filepath
       - getopt-generics
+      - hinotify
       - hsndfile
       - hsndfile-vector
       - vector
-      - hinotify
-      - filepath
 
 tests:
   spec:
@@ -35,12 +35,12 @@ tests:
       - bytestring
       - directory
       - filepath
+      - getopt-generics
+      - hinotify
       - hsndfile
       - hsndfile-vector
       - hspec
       - mockery
-      - vector
       - process
-      - getopt-generics
-      - hinotify
       - shake
+      - vector
