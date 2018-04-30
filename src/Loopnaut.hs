@@ -33,14 +33,24 @@ setBuffer bindings loopnaut list = do
   (array, len) <- allocateList list
   set_buffer bindings loopnaut array len
 
-data CliArgs = CliArgs FilePath
+data CliArgs = CliArgs File
   deriving (Show, Generic)
 
 instance HasArguments CliArgs
 
+data File = File FilePath
+  deriving (Show)
+
+instance HasArguments File where
+  argumentsParser = atomicArgumentsParser
+
+instance Argument File where
+  argumentType Proxy = "SOUNDFILE"
+  parseArgument f = Just (File f)
+
 run :: CBindings -> CliArgs -> IO Void
 run bindings cliArgs = do
-  let CliArgs file = cliArgs
+  let CliArgs (File file) = cliArgs
   loopnaut <- create bindings
   updateLoopnaut bindings loopnaut file
 

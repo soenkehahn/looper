@@ -15,19 +15,11 @@ executables:
     extra-libraries:
       - jack
     dependencies:
-      - getopt-generics
-      - hsndfile
-      - hsndfile-vector
-      - vector
-      - hinotify
       - filepath
-
-  generate:
-    main: Generate.hs
-    dependencies:
+      - getopt-generics
+      - hinotify
       - hsndfile
       - hsndfile-vector
-      - random
       - vector
 
 tests:
@@ -43,12 +35,12 @@ tests:
       - bytestring
       - directory
       - filepath
+      - getopt-generics
+      - hinotify
       - hsndfile
       - hsndfile-vector
       - hspec
       - mockery
-      - vector
       - process
-      - getopt-generics
-      - hinotify
       - shake
+      - vector
