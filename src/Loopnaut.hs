@@ -1,4 +1,5 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE DeriveGeneric #-}
 
 module Loopnaut where
@@ -10,6 +11,7 @@ import Foreign.C.Types
 import Foreign.Marshal.Array
 import Data.Void
 import Foreign.Ptr
+import Data.String.Conversions
 import Foreign.Storable
 import Sound.File.Sndfile as Snd
 import qualified Sound.File.Sndfile.Buffer.Vector as BV
@@ -56,8 +58,8 @@ run bindings cliArgs = do
 
   withINotify $ \ inotify -> do
     let dir = dropFileName file
-    _ <- addWatch inotify [Close] dir $ \ event -> case event of
-      Closed{maybeFilePath = Just file, wasWriteable = True}
+    _ <- addWatch inotify [Close] (cs dir) $ \ event -> case event of
+      Closed{maybeFilePath = Just (cs -> file), wasWriteable = True}
         | normalise (dir </> file) == normalise file
         -> updateLoopnaut bindings loopnaut file
       _ -> return ()

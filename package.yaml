@@ -21,6 +21,7 @@ executables:
       - hsndfile
       - hsndfile-vector
       - vector
+      - string-conversions
 
 tests:
   spec:
@@ -44,3 +45,4 @@ tests:
       - process
       - shake
       - vector
+      - string-conversions

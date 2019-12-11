@@ -1,3 +1,6 @@
-resolver: lts-9.3
+resolver: lts-14.17
 packages:
-extra-deps: []
+  - .
+extra-deps:
+  - hsndfile-0.8.0@sha256:3e77b6a4997e2c92b99864b1d63ec8fa42c9e4e26988f74bdf9930eb6793a323,1757
+  - hsndfile-vector-0.5.2@sha256:1cbe8589864a119bf8fe3768066e266a4e5d27aae9c2c17d36311e1bdb96102c,1261
