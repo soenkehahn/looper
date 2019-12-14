@@ -15,13 +15,16 @@ executables:
     extra-libraries:
       - jack
     dependencies:
+      - deepseq
+      - directory
       - filepath
       - getopt-generics
       - hinotify
       - hsndfile
       - hsndfile-vector
-      - vector
+      - process
       - string-conversions
+      - vector
 
 tests:
   spec:
@@ -34,6 +37,7 @@ tests:
       - jack
     dependencies:
       - bytestring
+      - deepseq
       - directory
       - filepath
       - getopt-generics
@@ -41,8 +45,9 @@ tests:
       - hsndfile
       - hsndfile-vector
       - hspec
+      - interpolate
       - mockery
       - process
       - shake
-      - vector
       - string-conversions
+      - vector

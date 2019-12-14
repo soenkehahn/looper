@@ -4,10 +4,6 @@
 module LoopnautSpec where
 
 import Test.Hspec
-import Data.IORef
-import Foreign.Marshal.Array
-import Data.Traversable
-import CBindings
 import Loopnaut
 import Foreign.C.Types
 import System.Timeout
@@ -16,6 +12,7 @@ import Test.Mockery.Directory
 import Development.Shake
 import Control.Concurrent
 import System.FilePath
+import Utils
 
 spec :: Spec
 spec = do
@@ -86,23 +83,3 @@ testWhileLoopnautIsRunning action = do
         unit $ cmd "cp test-sound-1.wav current.wav"
         _ <- forkIO action
         run bindings (CliArgs (File"current.wav"))
-
-withMockBindings :: (CBindings -> IO ()) -> IO [([CFloat], Int)]
-withMockBindings action = do
-  mockBuffer <- newIORef []
-  let mockBindings = CBindings {
-    create_loopnaut = do
-      return (error "mock Ptr Buffer"),
-    set_buffer = \ _ buffer len -> do
-      modifyIORef mockBuffer (\ acc -> acc ++ [(buffer, len)])
-  }
-  action mockBindings
-  setBuffers <- readIORef mockBuffer
-  forM setBuffers $ \ (array, len) -> do
-    peeked <- peekArray len array
-    return (peeked, len)
-
-timebox :: IO a -> IO ()
-timebox action = do
-  _ <- timeout 40000 action
-  return ()

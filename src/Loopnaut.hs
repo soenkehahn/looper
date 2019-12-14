@@ -1,24 +1,26 @@
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE DeriveGeneric #-}
 
 module Loopnaut where
 
 import CBindings
 import Control.Concurrent
+import Control.Exception
 import Control.Monad
+import Data.List
+import Data.String.Conversions
+import Data.Void
 import Foreign.C.Types
 import Foreign.Marshal.Array
-import Data.Void
 import Foreign.Ptr
-import Data.String.Conversions
 import Foreign.Storable
-import Sound.File.Sndfile as Snd
-import qualified Sound.File.Sndfile.Buffer.Vector as BV
-import Data.Vector.Storable (toList)
-import WithCli
-import System.INotify
+import Loopnaut.FromExecutable
+import Loopnaut.FromSndFile
+import System.Directory
 import System.FilePath
+import System.INotify
+import WithCli
 
 create :: CBindings -> IO (Ptr CLoopnaut)
 create = create_loopnaut
@@ -67,10 +69,27 @@ run bindings cliArgs = do
 
 updateLoopnaut :: CBindings -> Ptr CLoopnaut -> FilePath -> IO ()
 updateLoopnaut bindings loopnaut file = do
-  (_info, mBuffer :: Maybe (BV.Buffer Double)) <- Snd.readFile file
-  case mBuffer of
-    Just fileContent -> do
-      let sampleList = map realToFrac (toList (BV.fromBuffer fileContent))
-      setBuffer bindings loopnaut sampleList
-    Nothing -> do
-      error "file empty"
+  exists <- doesFileExist file
+  when (not exists) $ do
+    throwIO $ ErrorCall ("file not found: " ++ file)
+  buffer <- tryReaders file
+    (readFromExecutable file)
+    (readFromSndfile file)
+  setBuffer bindings loopnaut (map realToFrac buffer)
+
+tryReaders :: FilePath -> IO FromExecutable -> IO FromSndfile -> IO [Double]
+tryReaders file readFromExecutable readFromSndFile = do
+  fromExecutable <- readFromExecutable
+  case fromExecutable of
+    ExecutableSuccess result -> return result
+    ExecutableDecodingError error -> throwIO $ ErrorCall error
+    PermissionError -> do
+      fromSndFile <- readFromSndFile
+      case fromSndFile of
+        SndFileSuccess result -> return result
+        SndFileError error ->
+          throwIO $ ErrorCall $ intercalate "\n" $
+            (file ++ " is neither an executable (the executable flag is not set)") :
+            "nor is it a sound file:" :
+            ("  " ++ error) :
+            []
