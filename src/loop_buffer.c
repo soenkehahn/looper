@@ -11,9 +11,6 @@ struct loopnaut {
   struct loopnaut* next;
 };
 
-// struct loopnaut* create_array_loopnaut(float* array, int length) {
-// }
-
 struct loopnaut* create_empty_loopnaut() {
   struct loopnaut* result = malloc(sizeof(struct loopnaut));
   float array[1] = {0.0};
