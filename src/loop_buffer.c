@@ -11,10 +11,9 @@ struct loopnaut {
 
 struct loopnaut* create_empty_loopnaut() {
   struct loopnaut* result = malloc(sizeof(struct loopnaut));
-  float array[1] = {0.0};
-  result->array = array;
+  result->array = NULL;
   result->index = 0;
-  result->length = 1;
+  result->length = 0;
   result->next = NULL;
   return result;
 }
@@ -29,19 +28,21 @@ void set_buffer(struct loopnaut* loopnaut, float* array, int length) {
 }
 
 float get_next_sample(struct loopnaut* loopnaut) {
-  float result = loopnaut->array[loopnaut->index];
-  loopnaut->index++;
-  if (loopnaut->index >= loopnaut->length) {
-    if (loopnaut->next == NULL) {
-      loopnaut->index = 0;
-    } else {
-      loopnaut->array = loopnaut->next->array;
-      loopnaut->index = loopnaut->next->index;
-      loopnaut->length = loopnaut->next->length;
-      loopnaut->next = NULL;
-    }
+  if (loopnaut->index >= loopnaut->length && loopnaut->next != NULL) {
+    loopnaut->array = loopnaut->next->array;
+    loopnaut->index = loopnaut->next->index;
+    loopnaut->length = loopnaut->next->length;
+    loopnaut->next = NULL;
   }
-  return result;
+  if (loopnaut->length == 0) {
+    return 0.0;
+  }
+  if (loopnaut->index >= loopnaut->length) {
+    loopnaut->index = 0;
+  }
+  float sample = loopnaut->array[loopnaut->index];
+  loopnaut->index++;
+  return sample;
 }
 
 void start_portaudio(struct loopnaut* loopnaut);
