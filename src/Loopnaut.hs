@@ -20,6 +20,7 @@ import Loopnaut.FromSndFile
 import System.Directory
 import System.FilePath
 import System.INotify
+import System.IO
 import WithCli
 
 create :: CBindings -> IO (Ptr CLoopnaut)
@@ -69,12 +70,14 @@ run bindings cliArgs = do
 
 updateLoopnaut :: CBindings -> Ptr CLoopnaut -> FilePath -> IO ()
 updateLoopnaut bindings loopnaut file = do
+  hPutStr stderr "reading audio snippet..."
   exists <- doesFileExist file
   when (not exists) $ do
     throwIO $ ErrorCall ("file not found: " ++ file)
   buffer <- tryReaders file
     (readFromExecutable file)
     (readFromSndfile file)
+  hPutStrLn stderr "done"
   setBuffer bindings loopnaut (map realToFrac buffer)
 
 tryReaders :: FilePath -> IO FromExecutable -> IO FromSndfile -> IO [Double]

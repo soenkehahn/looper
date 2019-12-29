@@ -3,19 +3,21 @@
 
 module LoopnautSpec where
 
-import Test.Hspec
-import Loopnaut
-import Foreign.C.Types
-import System.Timeout
-import System.Directory
-import Test.Mockery.Directory
-import Development.Shake
 import Control.Concurrent
+import Development.Shake
+import Foreign.C.Types
+import Loopnaut
+import System.Directory
 import System.FilePath
+import System.IO
+import System.IO.Silently
+import System.Timeout
+import Test.Hspec
+import Test.Mockery.Directory
 import Utils
 
 spec :: Spec
-spec = do
+spec = around_ (hSilence [stderr]) $ do
   describe "setBuffer" $ do
     it "plays back a buffer" $ do
       [(array, len)] <- withMockBindings $ \ bindings -> do
@@ -33,7 +35,6 @@ spec = do
       array `shouldBe` [4, 5, 6, 7]
 
   describe "run" $ do
-
     it "plays back a given file" $ do
       [(array, len)] <- testWhileLoopnautIsRunning $ do
         return ()

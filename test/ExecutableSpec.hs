@@ -3,14 +3,17 @@
 
 module ExecutableSpec where
 
-import Test.Hspec
+import Control.Exception
 import Control.Monad
-import Development.Shake
-import Test.Mockery.Directory
-import Loopnaut
 import Data.String.Interpolate
 import Data.String.Interpolate.Util
+import Development.Shake
 import Foreign.C.Types
+import Loopnaut
+import System.IO
+import System.IO.Silently
+import Test.Hspec
+import Test.Mockery.Directory
 import Utils
 
 runWithFile :: Bool -> String -> IO [([CFloat], Int)]
@@ -22,7 +25,7 @@ runWithFile executable fileContents = do
     run bindings (CliArgs (File "foo.sh"))
 
 spec :: Spec
-spec = around_ inTempDirectory $ do
+spec = around_ inTempDirectory $ around_ (hSilence [stderr]) $ do
   describe "when given an executable file" $ do
     it "executes the file and reads the sound samples from its stdout" $ do
       result <- runWithFile True [i|
@@ -65,3 +68,27 @@ spec = around_ inTempDirectory $ do
       let command = withMockBindings $ \ bindings -> timebox $ do
             run bindings (CliArgs (File "foo.sh"))
       command `shouldThrow` errorCall "file not found: foo.sh"
+
+  describe "terminal output" $ do
+    it "outputs a message when starting to read the audio snippet" $ do
+      output <-
+        hCapture_ [stderr] $
+        handle (\ (_ :: ErrorCall) -> return ()) $ do
+          _ <- runWithFile True [i|
+            #!/usr/bin/env bash
+            echo 1
+            false
+          |]
+          return ()
+      output `shouldBe` "reading audio snippet..."
+
+    it "outputs a message when finishing to read the audio snippet" $ do
+      output <-
+        hCapture_ [stderr] $
+        handle (\ (_ :: ErrorCall) -> return ()) $ do
+          _ <- runWithFile True [i|
+            #!/usr/bin/env bash
+            echo 1
+          |]
+          return ()
+      output `shouldBe` "reading audio snippet...done\n"

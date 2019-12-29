@@ -48,5 +48,6 @@ tests:
       - mockery
       - process
       - shake
+      - silently
       - string-conversions
       - vector
