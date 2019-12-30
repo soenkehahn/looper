@@ -80,7 +80,7 @@ spec = around_ inTempDirectory $ around_ (hSilence [stderr]) $ do
             false
           |]
           return ()
-      output `shouldBe` "reading audio snippet..."
+      output `shouldBe` "reading audio snippet from foo.sh..."
 
     it "outputs a message when finishing to read the audio snippet" $ do
       output <-
@@ -91,4 +91,4 @@ spec = around_ inTempDirectory $ around_ (hSilence [stderr]) $ do
             echo 1
           |]
           return ()
-      output `shouldBe` "reading audio snippet...done\n"
+      output `shouldBe` "reading audio snippet from foo.sh...done\n"
