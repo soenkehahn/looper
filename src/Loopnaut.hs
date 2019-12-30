@@ -70,7 +70,8 @@ run bindings cliArgs = do
 
 updateLoopnaut :: CBindings -> Ptr CLoopnaut -> FilePath -> IO ()
 updateLoopnaut bindings loopnaut file = do
-  hPutStr stderr ("reading audio snippet from " ++ file ++ "...")
+  hPutStr stderr ("reading audio snippet from " ++ file ++ "...\n")
+  hFlush stderr
   exists <- doesFileExist file
   when (not exists) $ do
     throwIO $ ErrorCall ("file not found: " ++ file)

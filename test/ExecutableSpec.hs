@@ -80,7 +80,7 @@ spec = around_ inTempDirectory $ around_ (hSilence [stderr]) $ do
             false
           |]
           return ()
-      output `shouldBe` "reading audio snippet from foo.sh..."
+      output `shouldBe` "reading audio snippet from foo.sh...\n"
 
     it "outputs a message when finishing to read the audio snippet" $ do
       output <-
@@ -91,4 +91,15 @@ spec = around_ inTempDirectory $ around_ (hSilence [stderr]) $ do
             echo 1
           |]
           return ()
-      output `shouldBe` "reading audio snippet from foo.sh...done\n"
+      output `shouldBe` "reading audio snippet from foo.sh...\ndone\n"
+
+    it "relays output to stderr from the executables" $ do
+      output <-
+        hCapture_ [stderr] $
+        handle (\ (_ :: ErrorCall) -> return ()) $ do
+          _ <- runWithFile True [i|
+            #!/usr/bin/env bash
+            echo foo 1>&2
+          |]
+          return ()
+      output `shouldBe` "reading audio snippet from foo.sh...\nfoo\ndone\n"
