@@ -1,9 +1,9 @@
 
 import Loopnaut
 import Loopnaut.CBindings.FFI
-import WithCli
+import Cli
 
 main :: IO ()
-main = withCli $ \ cliArgs -> do
+main = withCliArgs $ \ cliArgs -> do
   _ <- run cBindings cliArgs
   return ()

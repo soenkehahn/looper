@@ -3,6 +3,7 @@
 
 module ExecutableSpec where
 
+import Control.Concurrent
 import Control.Exception
 import Control.Monad
 import Data.String.Interpolate
@@ -15,6 +16,7 @@ import System.IO.Silently
 import Test.Hspec
 import Test.Mockery.Directory
 import Utils
+import Cli
 
 runWithFile :: Bool -> String -> IO [([CFloat], Int)]
 runWithFile executable fileContents = do
@@ -22,7 +24,7 @@ runWithFile executable fileContents = do
     writeFile "foo.sh" $ unindent fileContents
     when executable $ do
       unit $ cmd "chmod +x foo.sh"
-    run bindings (CliArgs (File "foo.sh"))
+    run bindings (CliArgs "foo.sh" [])
 
 spec :: Spec
 spec = around_ inTempDirectory $ around_ (hSilence [stderr]) $ do
@@ -66,7 +68,7 @@ spec = around_ inTempDirectory $ around_ (hSilence [stderr]) $ do
   describe "when the file does not exist" $ do
     it "outputs a good error message" $ do
       let command = withMockBindings $ \ bindings -> timebox $ do
-            run bindings (CliArgs (File "foo.sh"))
+            run bindings (CliArgs "foo.sh" [])
       command `shouldThrow` errorCall "file not found: foo.sh"
 
   describe "terminal output" $ do
@@ -103,3 +105,48 @@ spec = around_ inTempDirectory $ around_ (hSilence [stderr]) $ do
           |]
           return ()
       output `shouldBe` "reading audio snippet from foo.sh...\nfoo\ndone\n"
+
+  describe "file change detection" $ do
+    it "only watches the given file" $ do
+      output <- hCapture_ [stderr] $ withMockBindings $ \ bindings -> timebox $ do
+        writeFile "foo.sh" $ unindent [i|
+          #!/usr/bin/env bash
+          echo 1
+        |]
+        unit $ cmd "chmod +x foo.sh"
+        _ <- forkIO $ do
+          threadDelay 4000
+          writeFile "bar" "foo"
+        run bindings (CliArgs "foo.sh" [])
+      output `shouldBe` "reading audio snippet from foo.sh...\ndone\n"
+
+    it "allows to watch additional files" $ do
+      output <- hCapture_ [stderr] $ withMockBindings $ \ bindings -> timebox $ do
+        writeFile "foo.sh" $ unindent [i|
+          #!/usr/bin/env bash
+          echo 1
+        |]
+        unit $ cmd "chmod +x foo.sh"
+        _ <- forkIO $ do
+          threadDelay 8000
+          writeFile "bar" "foo"
+        run bindings (CliArgs "foo.sh" ["bar"])
+      output `shouldBe`
+        "reading audio snippet from foo.sh...\ndone\n" ++
+        "bar changed, reading audio snippet from foo.sh...\ndone\n"
+
+    it "allows to watch additional files in subdirectories" $ do
+      output <- hCapture_ [stderr] $ withMockBindings $ \ bindings -> timebox $ do
+        writeFile "foo.sh" $ unindent [i|
+          #!/usr/bin/env bash
+          echo 1
+        |]
+        unit $ cmd "chmod +x foo.sh"
+        unit $ cmd "mkdir bar"
+        _ <- forkIO $ do
+          threadDelay 8000
+          writeFile "bar/baz" "foo"
+        run bindings (CliArgs "foo.sh" ["bar/baz"])
+      output `shouldBe`
+        "reading audio snippet from foo.sh...\ndone\n" ++
+        "bar/baz changed, reading audio snippet from foo.sh...\ndone\n"

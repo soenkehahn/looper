@@ -15,6 +15,7 @@ import System.Timeout
 import Test.Hspec
 import Test.Mockery.Directory
 import Utils
+import Cli
 
 spec :: Spec
 spec = around_ (hSilence [stderr]) $ do
@@ -44,7 +45,7 @@ spec = around_ (hSilence [stderr]) $ do
     it "does not terminate" $ do
       _ <- withMockBindings $ \ bindings -> do
         result <- timeout 20000 $
-          run bindings (CliArgs (File "test/test-sound-1.wav"))
+          run bindings (CliArgs "test/test-sound-1.wav" [])
         result `shouldBe` Nothing
       return ()
 
@@ -83,4 +84,4 @@ testWhileLoopnautIsRunning action = do
         unit $ cmd "cp" (repoDir </> "test/test-sound-2.wav") "test-sound-2.wav"
         unit $ cmd "cp test-sound-1.wav current.wav"
         _ <- forkIO action
-        run bindings (CliArgs (File"current.wav"))
+        run bindings (CliArgs "current.wav" [])
