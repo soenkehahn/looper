@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ViewPatterns #-}
 
@@ -21,7 +20,7 @@ import System.Directory
 import System.FilePath
 import System.INotify
 import System.IO
-import WithCli
+import Cli
 
 create :: CBindings -> IO (Ptr CLoopnaut)
 create = create_loopnaut
@@ -38,39 +37,31 @@ setBuffer bindings loopnaut list = do
   (array, len) <- allocateList list
   set_buffer bindings loopnaut array len
 
-data CliArgs = CliArgs File
-  deriving (Show, Generic)
-
-instance HasArguments CliArgs
-
-data File = File FilePath
-  deriving (Show)
-
-instance HasArguments File where
-  argumentsParser = atomicArgumentsParser
-
-instance Argument File where
-  argumentType Proxy = "SOUNDFILE"
-  parseArgument f = Just (File f)
-
 run :: CBindings -> CliArgs -> IO Void
 run bindings cliArgs = do
-  let CliArgs (File file) = cliArgs
+  let CliArgs file watched = cliArgs
   loopnaut <- create bindings
-  updateLoopnaut bindings loopnaut file
+  updateLoopnaut bindings loopnaut file file
+  watchFiles (map dropFileName (file : watched)) $ \ changedFile -> do
+    when (changedFile == file || changedFile `elem` watched) $ do
+      updateLoopnaut bindings loopnaut file changedFile
 
+watchFiles :: [FilePath] -> (FilePath -> IO ()) -> IO Void
+watchFiles (nub -> dirs) action = do
   withINotify $ \ inotify -> do
-    let dir = dropFileName file
-    _ <- addWatch inotify [Close] (cs dir) $ \ event -> case event of
-      Closed{maybeFilePath = Just (cs -> file), wasWriteable = True}
-        | normalise (dir </> file) == normalise file
-        -> updateLoopnaut bindings loopnaut file
-      _ -> return ()
+    forM_ dirs $ \ dir -> do
+      addWatch inotify [Close] (cs dir) $ \ event -> do
+        case event of
+          Closed{maybeFilePath = Just (cs -> changedFile), wasWriteable = True} -> do
+            action $ normalise (dir </> changedFile)
+          _ -> return ()
     forever $ threadDelay 1000000
 
-updateLoopnaut :: CBindings -> Ptr CLoopnaut -> FilePath -> IO ()
-updateLoopnaut bindings loopnaut file = do
-  hPutStr stderr ("reading audio snippet from " ++ file ++ "...\n")
+updateLoopnaut :: CBindings -> Ptr CLoopnaut -> FilePath -> FilePath -> IO ()
+updateLoopnaut bindings loopnaut file changedFile = do
+  hPutStr stderr $
+    (if file /= changedFile then changedFile ++ " changed, " else "") ++
+    "reading audio snippet from " ++ file ++ "...\n"
   hFlush stderr
   exists <- doesFileExist file
   when (not exists) $ do
