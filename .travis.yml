@@ -8,7 +8,7 @@ addons:
     packages:
       - libgmp-dev
       - libsndfile1-dev
-      - libportaudio19-dev
+      - portaudio19-dev
 
 before_install:
   - mkdir -p ~/.local/bin
