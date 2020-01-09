@@ -1,11 +1,11 @@
 module Utils where
 
-import System.Timeout
-import CBindings
-import Foreign.C.Types
 import Data.IORef
 import Data.Traversable
+import Foreign.C.Types
 import Foreign.Marshal.Array
+import Loopnaut.CBindings
+import System.Timeout
 
 withMockBindings :: (CBindings -> IO ()) -> IO [([CFloat], Int)]
 withMockBindings action = do

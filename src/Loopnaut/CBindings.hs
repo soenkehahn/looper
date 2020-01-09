@@ -1,5 +1,4 @@
-
-module CBindings where
+module Loopnaut.CBindings where
 
 import Foreign.C.Types
 import Foreign.Ptr

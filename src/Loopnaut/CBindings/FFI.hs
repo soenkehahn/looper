@@ -1,8 +1,8 @@
-module CBindings.FFI where
+module Loopnaut.CBindings.FFI where
 
-import CBindings
 import Foreign.C.Types
 import Foreign.Ptr
+import Loopnaut.CBindings
 
 foreign import ccall "create_loopnaut" c_create_loopnaut ::
                IO (Ptr CLoopnaut)

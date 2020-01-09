@@ -1,6 +1,6 @@
 
 import Loopnaut
-import CBindings.FFI
+import Loopnaut.CBindings.FFI
 import WithCli
 
 main :: IO ()

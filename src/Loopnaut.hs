@@ -4,7 +4,6 @@
 
 module Loopnaut where
 
-import CBindings
 import Control.Concurrent
 import Control.Exception
 import Control.Monad
@@ -15,8 +14,9 @@ import Foreign.C.Types
 import Foreign.Marshal.Array
 import Foreign.Ptr
 import Foreign.Storable
-import Loopnaut.FromExecutable
-import Loopnaut.FromSndFile
+import Loopnaut.CBindings
+import Loopnaut.Snippet.FromExecutable
+import Loopnaut.Snippet.FromSndFile
 import System.Directory
 import System.FilePath
 import System.INotify
