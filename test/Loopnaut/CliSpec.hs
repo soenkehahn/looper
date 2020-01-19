@@ -1,9 +1,9 @@
-module CliSpec where
+module Loopnaut.CliSpec where
 
-import Test.Hspec
-import Cli
-import System.Environment
 import Control.Exception
+import Loopnaut.Cli
+import System.Environment
+import Test.Hspec
 
 testWithArgs :: [String] -> (CliArgs -> IO ()) -> IO ()
 testWithArgs args test = do

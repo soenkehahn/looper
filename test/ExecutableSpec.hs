@@ -11,12 +11,12 @@ import Data.String.Interpolate.Util
 import Development.Shake
 import Foreign.C.Types
 import Loopnaut
+import Loopnaut.Cli
 import System.IO
 import System.IO.Silently
 import Test.Hspec
 import Test.Mockery.Directory
 import Utils
-import Cli
 
 runWithFile :: Bool -> String -> IO [([CFloat], Int)]
 runWithFile executable fileContents = do

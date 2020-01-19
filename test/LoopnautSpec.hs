@@ -7,6 +7,7 @@ import Control.Concurrent
 import Development.Shake
 import Foreign.C.Types
 import Loopnaut
+import Loopnaut.Cli
 import System.Directory
 import System.FilePath
 import System.IO
@@ -15,7 +16,6 @@ import System.Timeout
 import Test.Hspec
 import Test.Mockery.Directory
 import Utils
-import Cli
 
 spec :: Spec
 spec = around_ (hSilence [stderr]) $ do

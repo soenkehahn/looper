@@ -14,13 +14,13 @@ import Foreign.Marshal.Array
 import Foreign.Ptr
 import Foreign.Storable
 import Loopnaut.CBindings
+import Loopnaut.Cli
 import Loopnaut.Snippet.FromExecutable
 import Loopnaut.Snippet.FromSndFile
 import System.Directory
 import System.FilePath
 import System.INotify
 import System.IO
-import Cli
 
 create :: CBindings -> IO (Ptr CLoopnaut)
 create = create_loopnaut

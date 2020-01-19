@@ -1,7 +1,7 @@
 
 import Loopnaut
 import Loopnaut.CBindings.FFI
-import Cli
+import Loopnaut.Cli
 
 main :: IO ()
 main = withCliArgs $ \ cliArgs -> do
