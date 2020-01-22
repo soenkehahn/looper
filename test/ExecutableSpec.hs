@@ -10,8 +10,6 @@ import Data.String.Interpolate
 import Data.String.Interpolate.Util
 import Development.Shake
 import Foreign.C.Types
-import Loopnaut
-import Loopnaut.Cli
 import System.IO
 import System.IO.Silently
 import Test.Hspec
@@ -24,7 +22,7 @@ runWithFile executable fileContents = do
     writeFile "foo.sh" $ unindent fileContents
     when executable $ do
       unit $ cmd "chmod +x foo.sh"
-    run bindings (CliArgs "foo.sh" [])
+    testRun bindings "foo.sh" []
 
 spec :: Spec
 spec = around_ inTempDirectory $ around_ (hSilence [stderr]) $ do
@@ -68,7 +66,7 @@ spec = around_ inTempDirectory $ around_ (hSilence [stderr]) $ do
   describe "when the file does not exist" $ do
     it "outputs a good error message" $ do
       let command = withMockBindings $ \ bindings -> timebox $ do
-            run bindings (CliArgs "foo.sh" [])
+            testRun bindings "foo.sh" []
       command `shouldThrow` errorCall "file not found: foo.sh"
 
   describe "terminal output" $ do
@@ -117,7 +115,7 @@ spec = around_ inTempDirectory $ around_ (hSilence [stderr]) $ do
         _ <- forkIO $ do
           threadDelay 4000
           writeFile "bar" "foo"
-        run bindings (CliArgs "foo.sh" [])
+        testRun bindings "foo.sh" []
       output `shouldBe` "reading audio snippet from foo.sh...\ndone\n"
 
     it "allows to watch additional files" $ do
@@ -130,7 +128,7 @@ spec = around_ inTempDirectory $ around_ (hSilence [stderr]) $ do
         _ <- forkIO $ do
           threadDelay 8000
           writeFile "bar" "foo"
-        run bindings (CliArgs "foo.sh" ["bar"])
+        testRun bindings "foo.sh" ["bar"]
       output `shouldBe`
         "reading audio snippet from foo.sh...\ndone\n" ++
         "bar changed, reading audio snippet from foo.sh...\ndone\n"
@@ -146,7 +144,7 @@ spec = around_ inTempDirectory $ around_ (hSilence [stderr]) $ do
         _ <- forkIO $ do
           threadDelay 8000
           writeFile "bar/baz" "foo"
-        run bindings (CliArgs "foo.sh" ["bar/baz"])
+        testRun bindings "foo.sh" ["bar/baz"]
       output `shouldBe`
         "reading audio snippet from foo.sh...\ndone\n" ++
         "bar/baz changed, reading audio snippet from foo.sh...\ndone\n"

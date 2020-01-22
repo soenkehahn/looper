@@ -42,37 +42,42 @@ run bindings cliArgs = do
   let CliArgs file watched = cliArgs
   loopnaut <- create bindings
   updateLoopnaut bindings loopnaut file file
-  watchFiles (map dropFileName (file : watched)) $ \ changedFile -> do
-    when (changedFile == file || changedFile `elem` watched) $ do
-      updateLoopnaut bindings loopnaut file changedFile
+  watchFiles (file : watched) $ \ changedFile -> do
+    updateLoopnaut bindings loopnaut file changedFile
 
-watchFiles :: [FilePath] -> (FilePath -> IO ()) -> IO Void
-watchFiles (nub -> dirs) action = do
+watchFiles :: [File] -> (File -> IO ()) -> IO Void
+watchFiles files action = do
+  let dirs = nub $ map (dropFileName . canonicalPath) files
   withINotify $ \ inotify -> do
     forM_ dirs $ \ dir -> do
       addWatch inotify [Close] (cs dir) $ \ event -> do
         case event of
-          Closed{maybeFilePath = Just (cs -> changedFile), wasWriteable = True} -> do
-            action $ normalise (dir </> changedFile)
+          Closed{maybeFilePath = Just changed, wasWriteable = True} -> do
+            changedFile <- canonicalizePath (dir </> cs changed)
+            let triggers = filter (\ w -> canonicalPath w == changedFile) files
+            case triggers of
+              trigger : _ -> do
+                action trigger
+              [] -> return ()
           _ -> return ()
     forever $ threadDelay 1000000
 
-updateLoopnaut :: CBindings -> Ptr CLoopnaut -> FilePath -> FilePath -> IO ()
+updateLoopnaut :: CBindings -> Ptr CLoopnaut -> File -> File -> IO ()
 updateLoopnaut bindings loopnaut file changedFile = do
   hPutStr stderr $
-    (if file /= changedFile then changedFile ++ " changed, " else "") ++
-    "reading audio snippet from " ++ file ++ "...\n"
+    (if file /= changedFile then renderFile changedFile ++ " changed, " else "") ++
+    "reading audio snippet from " ++ renderFile file ++ "...\n"
   hFlush stderr
-  exists <- doesFileExist file
+  exists <- doesFileExist $ canonicalPath file
   when (not exists) $ do
-    throwIO $ ErrorCall ("file not found: " ++ file)
+    throwIO $ ErrorCall ("file not found: " ++ renderFile file)
   buffer <- tryReaders file
     (readFromExecutable file)
     (readFromSndfile file)
   hPutStrLn stderr "done"
   setBuffer bindings loopnaut (map realToFrac buffer)
 
-tryReaders :: FilePath -> IO FromExecutable -> IO FromSndfile -> IO [Double]
+tryReaders :: File -> IO FromExecutable -> IO FromSndfile -> IO [Double]
 tryReaders file readFromExecutable readFromSndFile = do
   fromExecutable <- readFromExecutable
   case fromExecutable of
@@ -84,7 +89,7 @@ tryReaders file readFromExecutable readFromSndFile = do
         SndFileSuccess result -> return result
         SndFileError error ->
           throwIO $ ErrorCall $ intercalate "\n" $
-            (file ++ " is neither an executable (the executable flag is not set)") :
+            (renderFile file ++ " is neither an executable (the executable flag is not set)") :
             "nor is it a sound file:" :
             ("  " ++ error) :
             []
