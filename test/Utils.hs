@@ -1,6 +1,9 @@
 module Utils where
 
+import Data.Void
+import Loopnaut.Cli
 import Data.IORef
+import Loopnaut
 import Data.Traversable
 import Foreign.C.Types
 import Foreign.Marshal.Array
@@ -26,3 +29,8 @@ timebox :: IO a -> IO ()
 timebox action = do
   _ <- timeout 400000 action
   return ()
+
+testRun :: CBindings -> FilePath -> [FilePath] -> IO Void
+testRun bindings file watched = do
+  cliArgs <- CliArgs <$> mkFile file <*> mapM mkFile watched
+  run bindings cliArgs

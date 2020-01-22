@@ -7,7 +7,6 @@ import Control.Concurrent
 import Development.Shake
 import Foreign.C.Types
 import Loopnaut
-import Loopnaut.Cli
 import System.Directory
 import System.FilePath
 import System.IO
@@ -44,8 +43,8 @@ spec = around_ (hSilence [stderr]) $ do
 
     it "does not terminate" $ do
       _ <- withMockBindings $ \ bindings -> do
-        result <- timeout 20000 $
-          run bindings (CliArgs "test/test-sound-1.wav" [])
+        result <- timeout 20000 $ do
+          testRun bindings "test/test-sound-1.wav" []
         result `shouldBe` Nothing
       return ()
 
@@ -84,4 +83,4 @@ testWhileLoopnautIsRunning action = do
         unit $ cmd "cp" (repoDir </> "test/test-sound-2.wav") "test-sound-2.wav"
         unit $ cmd "cp test-sound-1.wav current.wav"
         _ <- forkIO action
-        run bindings (CliArgs "current.wav" [])
+        testRun bindings "current.wav" []
