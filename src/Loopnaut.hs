@@ -8,7 +8,6 @@ import Control.Exception
 import Control.Monad
 import Data.List
 import Data.String.Conversions
-import Data.Void
 import Foreign.C.Types
 import Foreign.Marshal.Array
 import Foreign.Ptr
@@ -37,16 +36,21 @@ setBuffer bindings loopnaut list = do
   (array, len) <- allocateList list
   set_buffer bindings loopnaut array len
 
-run :: CBindings -> CliArgs -> IO Void
-run bindings cliArgs = do
+run :: CBindings -> CliArgs -> IO a
+run bindings cliArgs = withRun bindings cliArgs $ do
+  forever $ threadDelay 1000000
+
+withRun :: CBindings -> CliArgs -> IO a -> IO a
+withRun bindings cliArgs action = do
   let CliArgs file watched = cliArgs
   loopnaut <- create bindings
   updateLoopnaut bindings loopnaut file file
-  watchFiles (file : watched) $ \ changedFile -> do
-    updateLoopnaut bindings loopnaut file changedFile
+  watchFiles (file : watched)
+    (\ changedFile -> updateLoopnaut bindings loopnaut file changedFile)
+    action
 
-watchFiles :: [File] -> (File -> IO ()) -> IO Void
-watchFiles files action = do
+watchFiles :: [File] -> (File -> IO ()) -> IO a -> IO a
+watchFiles files handler action = do
   let dirs = nub $ map (dropFileName . canonicalPath) files
   withINotify $ \ inotify -> do
     forM_ dirs $ \ dir -> do
@@ -57,10 +61,10 @@ watchFiles files action = do
             let triggers = filter (\ w -> canonicalPath w == changedFile) files
             case triggers of
               trigger : _ -> do
-                action trigger
+                handler trigger
               [] -> return ()
           _ -> return ()
-    forever $ threadDelay 1000000
+    action
 
 updateLoopnaut :: CBindings -> Ptr CLoopnaut -> File -> File -> IO ()
 updateLoopnaut bindings loopnaut file changedFile = do

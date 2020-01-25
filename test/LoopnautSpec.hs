@@ -6,12 +6,12 @@ module LoopnautSpec where
 import Control.Concurrent
 import Development.Shake
 import Foreign.C.Types
+import Data.IORef
 import Loopnaut
 import System.Directory
 import System.FilePath
 import System.IO
 import System.IO.Silently
-import System.Timeout
 import Test.Hspec
 import Test.Mockery.Directory
 import Utils
@@ -41,16 +41,15 @@ spec = around_ (hSilence [stderr]) $ do
       len `shouldBe` 221
       take 3 array `shouldBe` [1.9686777e-2,5.7297602e-2,9.422311e-2]
 
-    it "does not terminate" $ do
+    it "does execute the given action" $ do
       _ <- withMockBindings $ \ bindings -> do
-        result <- timeout 20000 $ do
-          testRun bindings "test/test-sound-1.wav" []
-        result `shouldBe` Nothing
+        ref <- newIORef ""
+        testRun bindings "test/test-sound-1.wav" [] (writeIORef ref "foo")
+        readIORef ref `shouldReturn` "foo"
       return ()
 
     it "does detect file changes and plays back the changed file" $ do
       buffers <- testWhileLoopnautIsRunning $ do
-        threadDelay 8000
         unit $ cmd "cp test-sound-2.wav current.wav"
       length buffers `shouldBe` 2
       let [_, last] = buffers
@@ -59,15 +58,13 @@ spec = around_ (hSilence [stderr]) $ do
 
     it "does not replace the buffer when the file is deleted" $ do
       buffers <- testWhileLoopnautIsRunning $ do
-        threadDelay 8000
         unit $ cmd "rm current.wav"
       length buffers `shouldBe` 1
 
     it "does replace the buffer after deletion with a newly created file" $ do
       buffers <- testWhileLoopnautIsRunning $ do
-        threadDelay 4000
         unit $ cmd "rm current.wav"
-        threadDelay 4000
+        threadDelay 10000
         unit $ cmd "cp test-sound-2.wav current.wav"
       length buffers `shouldBe` 2
       snd (last buffers) `shouldBe` 221
@@ -82,5 +79,4 @@ testWhileLoopnautIsRunning action = do
         unit $ cmd "cp" (repoDir </> "test/test-sound-1.wav") "test-sound-1.wav"
         unit $ cmd "cp" (repoDir </> "test/test-sound-2.wav") "test-sound-2.wav"
         unit $ cmd "cp test-sound-1.wav current.wav"
-        _ <- forkIO action
-        testRun bindings "current.wav" []
+        testRun bindings "current.wav" [] action
