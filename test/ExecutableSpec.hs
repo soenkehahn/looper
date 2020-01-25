@@ -16,47 +16,47 @@ import Test.Hspec
 import Test.Mockery.Directory
 import Utils
 
-runWithFile :: Bool -> String -> IO [([CFloat], Int)]
-runWithFile executable fileContents = do
+testRunWithFile :: Bool -> String -> IO () -> IO [([CFloat], Int)]
+testRunWithFile executable fileContents test = do
   withMockBindings $ \ bindings -> timebox $ do
     writeFile "foo.sh" $ unindent fileContents
     when executable $ do
       unit $ cmd "chmod +x foo.sh"
-    testRun bindings "foo.sh" []
+    testRun bindings "foo.sh" [] test
 
 spec :: Spec
 spec = around_ inTempDirectory $ around_ (hSilence [stderr]) $ do
   describe "when given an executable file" $ do
     it "executes the file and reads the sound samples from its stdout" $ do
-      result <- runWithFile True [i|
+      result <- testRunWithFile True [i|
         #!/usr/bin/env bash
         echo 1
         echo 2
         echo 3
-      |]
+      |] (return ())
       result `shouldBe` [([1, 2, 3], 3)]
 
     describe "when the output format is invalid" $ do
       it "outputs a good error message" $ do
-        let command = runWithFile True [i|
+        let command = testRunWithFile True [i|
                 #!/usr/bin/env bash
                 echo foo
-              |]
+              |] (return ())
         command `shouldThrow` (errorCall "foo.sh wrote a line to stdout that cannot be parsed as a number:\nfoo")
 
     describe "when the file returns a non-zero exit code" $ do
       it "outputs a good error message" $ do
-        let command = runWithFile True [i|
+        let command = testRunWithFile True [i|
                 #!/usr/bin/env bash
                 false
-              |]
+              |] (return ())
         command `shouldThrow` (errorCall "foo.sh failed with exit code 1")
 
   describe "when file is neither executable nor a soundfile" $ do
     it "outputs a good error message" $ do
-      let command = runWithFile False [i|
+      let command = testRunWithFile False [i|
               foo
-            |]
+            |] (return ())
       let expected = unindent $ [i|
         foo.sh is neither an executable (the executable flag is not set)
         nor is it a sound file:
@@ -66,7 +66,7 @@ spec = around_ inTempDirectory $ around_ (hSilence [stderr]) $ do
   describe "when the file does not exist" $ do
     it "outputs a good error message" $ do
       let command = withMockBindings $ \ bindings -> timebox $ do
-            testRun bindings "foo.sh" []
+            testRun bindings "foo.sh" [] (return ())
       command `shouldThrow` errorCall "file not found: foo.sh"
 
   describe "terminal output" $ do
@@ -74,11 +74,11 @@ spec = around_ inTempDirectory $ around_ (hSilence [stderr]) $ do
       output <-
         hCapture_ [stderr] $
         handle (\ (_ :: ErrorCall) -> return ()) $ do
-          _ <- runWithFile True [i|
+          _ <- testRunWithFile True [i|
             #!/usr/bin/env bash
             echo 1
             false
-          |]
+          |] (return ())
           return ()
       output `shouldBe` "reading audio snippet from foo.sh...\n"
 
@@ -86,10 +86,10 @@ spec = around_ inTempDirectory $ around_ (hSilence [stderr]) $ do
       output <-
         hCapture_ [stderr] $
         handle (\ (_ :: ErrorCall) -> return ()) $ do
-          _ <- runWithFile True [i|
+          _ <- testRunWithFile True [i|
             #!/usr/bin/env bash
             echo 1
-          |]
+          |] (return ())
           return ()
       output `shouldBe` "reading audio snippet from foo.sh...\ndone\n"
 
@@ -97,10 +97,10 @@ spec = around_ inTempDirectory $ around_ (hSilence [stderr]) $ do
       output <-
         hCapture_ [stderr] $
         handle (\ (_ :: ErrorCall) -> return ()) $ do
-          _ <- runWithFile True [i|
+          _ <- testRunWithFile True [i|
             #!/usr/bin/env bash
             echo foo 1>&2
-          |]
+          |] (return ())
           return ()
       output `shouldBe` "reading audio snippet from foo.sh...\nfoo\ndone\n"
 
@@ -112,10 +112,8 @@ spec = around_ inTempDirectory $ around_ (hSilence [stderr]) $ do
           echo 1
         |]
         unit $ cmd "chmod +x foo.sh"
-        _ <- forkIO $ do
-          threadDelay 4000
+        testRun bindings "foo.sh" [] $ do
           writeFile "bar" "foo"
-        testRun bindings "foo.sh" []
       output `shouldBe` "reading audio snippet from foo.sh...\ndone\n"
 
     it "allows to watch additional files" $ do
@@ -125,10 +123,9 @@ spec = around_ inTempDirectory $ around_ (hSilence [stderr]) $ do
           echo 1
         |]
         unit $ cmd "chmod +x foo.sh"
-        _ <- forkIO $ do
-          threadDelay 8000
+        testRun bindings "foo.sh" ["bar"] $ do
           writeFile "bar" "foo"
-        testRun bindings "foo.sh" ["bar"]
+          threadDelay 10000
       output `shouldBe`
         "reading audio snippet from foo.sh...\ndone\n" ++
         "bar changed, reading audio snippet from foo.sh...\ndone\n"
@@ -141,10 +138,9 @@ spec = around_ inTempDirectory $ around_ (hSilence [stderr]) $ do
         |]
         unit $ cmd "chmod +x foo.sh"
         unit $ cmd "mkdir bar"
-        _ <- forkIO $ do
-          threadDelay 8000
+        testRun bindings "foo.sh" ["bar/baz"] $ do
           writeFile "bar/baz" "foo"
-        testRun bindings "foo.sh" ["bar/baz"]
+          threadDelay 10000
       output `shouldBe`
         "reading audio snippet from foo.sh...\ndone\n" ++
         "bar/baz changed, reading audio snippet from foo.sh...\ndone\n"

@@ -1,6 +1,5 @@
 module Utils where
 
-import Data.Void
 import Loopnaut.Cli
 import Data.IORef
 import Loopnaut
@@ -30,7 +29,7 @@ timebox action = do
   _ <- timeout 400000 action
   return ()
 
-testRun :: CBindings -> FilePath -> [FilePath] -> IO Void
-testRun bindings file watched = do
+testRun :: CBindings -> FilePath -> [FilePath] -> IO a -> IO a
+testRun bindings file watched test = do
   cliArgs <- CliArgs <$> mkFile file <*> mapM mkFile watched
-  run bindings cliArgs
+  withRun bindings cliArgs test
