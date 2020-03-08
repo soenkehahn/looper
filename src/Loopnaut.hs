@@ -14,7 +14,6 @@ import Foreign.Storable
 import Loopnaut.CBindings
 import Loopnaut.Cli
 import Loopnaut.FileWatcher
-import Loopnaut.FileWatcher.Implementation
 import Loopnaut.Snippet.FromExecutable
 import Loopnaut.Snippet.FromSndFile
 import System.Directory
@@ -48,22 +47,22 @@ withRun bindings fileWatcher cliArgs action = do
     (\ changedFile -> updateLoopnaut bindings loopnaut file changedFile)
     action
 
-updateLoopnaut :: CBindings -> Ptr CLoopnaut -> File -> File -> IO ()
+updateLoopnaut :: CBindings -> Ptr CLoopnaut -> FilePath -> FilePath -> IO ()
 updateLoopnaut bindings loopnaut file changedFile = do
   hPutStr stderr $
-    (if file /= changedFile then renderFile changedFile ++ " changed, " else "") ++
-    "reading audio snippet from " ++ renderFile file ++ "...\n"
+    (if file /= changedFile then changedFile ++ " changed, " else "") ++
+    "reading audio snippet from " ++ file ++ "...\n"
   hFlush stderr
-  exists <- doesFileExist $ canonicalPath file
+  exists <- doesFileExist file
   when (not exists) $ do
-    throwIO $ ErrorCall ("file not found: " ++ renderFile file)
+    throwIO $ ErrorCall ("file not found: " ++ file)
   buffer <- tryReaders file
     (readFromExecutable file)
     (readFromSndfile file)
   hPutStrLn stderr "done"
   setBuffer bindings loopnaut (map realToFrac buffer)
 
-tryReaders :: File -> IO FromExecutable -> IO FromSndfile -> IO [Double]
+tryReaders :: FilePath -> IO FromExecutable -> IO FromSndfile -> IO [Double]
 tryReaders file readFromExecutable readFromSndFile = do
   fromExecutable <- readFromExecutable
   case fromExecutable of
@@ -75,7 +74,7 @@ tryReaders file readFromExecutable readFromSndFile = do
         SndFileSuccess result -> return result
         SndFileError error ->
           throwIO $ ErrorCall $ intercalate "\n" $
-            (renderFile file ++ " is neither an executable (the executable flag is not set)") :
+            (file ++ " is neither an executable (the executable flag is not set)") :
             "nor is it a sound file:" :
             ("  " ++ error) :
             []

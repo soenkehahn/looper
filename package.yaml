@@ -45,6 +45,7 @@ tests:
     pkg-config-dependencies: portaudio-2.0
     dependencies:
       - bytestring
+      - containers
       - deepseq
       - directory
       - filepath

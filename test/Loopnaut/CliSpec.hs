@@ -14,8 +14,7 @@ spec = do
   describe "withCliArgs" $ do
     it "parses the main file as a positional argument" $ do
       testWithArgs ["foo"] $ \ args -> do
-        file <- mkFile "foo"
-        args `shouldBe` CliArgs file []
+        args `shouldBe` CliArgs "foo" []
 
     it "complains about no positional argument" $ do
       let command = testWithArgs [] $ \ _ -> do
@@ -30,10 +29,8 @@ spec = do
 
     it "allows to pass in a watched file with --watch" $ do
       testWithArgs ["foo", "--watch", "bar"] $ \ args -> do
-        bar <- mkFile "bar"
-        cliArgsWatched args `shouldBe` [bar]
+        cliArgsWatched args `shouldBe` ["bar"]
 
     it "allows to pass in multiple watched files with --watch" $ do
       testWithArgs ["foo", "--watch", "bar", "--watch", "baz"] $ \ args -> do
-        expected <- mapM mkFile ["bar", "baz"]
-        cliArgsWatched args `shouldBe` expected
+        cliArgsWatched args `shouldBe` ["bar", "baz"]

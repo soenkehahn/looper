@@ -8,7 +8,7 @@ import Control.Exception
 import System.Timeout
 import Test.Mockery.Directory
 import Development.Shake
-import Loopnaut.FileWatcher.Implementation
+import Loopnaut.FileWatcher
 
 writeMVar :: MVar a -> a -> IO ()
 writeMVar ref a = do
@@ -35,14 +35,14 @@ spec :: Spec
 spec = around_ inTempDirectory $ describe "fileWatcher" $ do
   it "executes the given action" $ do
     ref <- newMVar False
-    register fileWatcher [] (\ _ -> return ()) $ do
+    watchFiles fileWatcher [] (\ _ -> return ()) $ do
       writeMVar ref True
     readMVar ref `shouldReturn` True
 
   it "executes the given handler on file changes" $ do
     writeFile "file" "foo"
     ref <- newMVar False
-    register fileWatcher ["file"] (\ _ -> writeMVar ref True) $ do
+    watchFiles fileWatcher ["file"] (\ _ -> writeMVar ref True) $ do
       _ <- forkIO $ do
         threadDelay 50000
         writeFile "file" "bar"
@@ -52,7 +52,7 @@ spec = around_ inTempDirectory $ describe "fileWatcher" $ do
     writeFile "file" "foo"
     let handle _file = do
           throwIO $ ErrorCall "exception from handler"
-    let action = register fileWatcher ["a"] handle $ do
+    let action = watchFiles fileWatcher ["file"] handle $ do
           _ <- forkIO $ do
             threadDelay 50000
             writeFile "file" "bar"
@@ -62,7 +62,7 @@ spec = around_ inTempDirectory $ describe "fileWatcher" $ do
   it "passes in the changed file to the handler" $ do
     writeFile "file" "foo"
     ref <- newMVar Nothing
-    register fileWatcher ["file"] (writeMVar ref . Just) $ do
+    watchFiles fileWatcher ["file"] (writeMVar ref . Just) $ do
       _ <- forkIO $ do
         threadDelay 50000
         writeFile "file" "bar"
@@ -72,7 +72,7 @@ spec = around_ inTempDirectory $ describe "fileWatcher" $ do
   it "works multiple times" $ do
     writeFile "file" "foo"
     ref <- newMVar (0 :: Integer)
-    register fileWatcher ["file"] (\ _ -> modify ref (+ 1)) $ do
+    watchFiles fileWatcher ["file"] (\ _ -> modify ref (+ 1)) $ do
       _ <- forkIO $ do
         threadDelay 50000
         writeFile "file" "bar"
@@ -84,7 +84,7 @@ spec = around_ inTempDirectory $ describe "fileWatcher" $ do
     writeFile "a" "foo"
     writeFile "b" "foo"
     ref <- newMVar []
-    register fileWatcher ["a", "b"] (\ file -> modify ref (++ [file])) $ do
+    watchFiles fileWatcher ["a", "b"] (\ file -> modify ref (++ [file])) $ do
       _ <- forkIO $ do
         threadDelay 50000
         writeFile "a" "bar"
@@ -100,7 +100,7 @@ spec = around_ inTempDirectory $ describe "fileWatcher" $ do
             contents <- readFile file
             modify ref (++ [contents])
             appendFile "/tmp/foo" "handled\n"
-      register fileWatcher ["file"] handle $ do
+      watchFiles fileWatcher ["file"] handle $ do
         _ <- forkIO $ do
           threadDelay 50000
           removeFile "file"
@@ -116,7 +116,7 @@ spec = around_ inTempDirectory $ describe "fileWatcher" $ do
       let handle file = do
             contents <- readFile file
             modify ref (++ [contents])
-      register fileWatcher ["target"] handle $ do
+      watchFiles fileWatcher ["target"] handle $ do
         _ <- forkIO $ do
           threadDelay 50000
           unit $ cmd "rm target"
@@ -129,9 +129,22 @@ spec = around_ inTempDirectory $ describe "fileWatcher" $ do
     unit $ cmd "mkdir dir"
     writeFile "dir/file" "foo"
     ref <- newMVar Nothing
-    register fileWatcher ["dir/file"] (writeMVar ref . Just) $ do
+    watchFiles fileWatcher ["dir/file"] (writeMVar ref . Just) $ do
       _ <- forkIO $ do
         threadDelay 50000
         writeFile "dir/file" "bar"
       waitFor ((Nothing /=) <$> readMVar ref)
     readMVar ref `shouldReturn` Just "dir/file"
+
+  it "doesn't trigger for other files in the same directory" $ do
+    writeFile "a" "foo"
+    writeFile "b" "foo"
+    ref <- newMVar []
+    watchFiles fileWatcher ["a"] (\ file -> modify ref (++ [file])) $ do
+      _ <- forkIO $ do
+        threadDelay 50000
+        writeFile "b" "bar"
+        threadDelay 50000
+        writeFile "a" "bar"
+      waitFor ((>= 1) . length <$> readMVar ref)
+    readMVar ref `shouldReturn` ["a"]

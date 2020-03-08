@@ -2,7 +2,7 @@
 import Loopnaut
 import Loopnaut.CBindings.FFI
 import Loopnaut.Cli
-import Loopnaut.FileWatcher.Implementation
+import Loopnaut.FileWatcher
 
 main :: IO ()
 main = withCliArgs $ \ cliArgs -> do
