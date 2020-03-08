@@ -3,7 +3,6 @@
 
 module ExecutableSpec where
 
-import Control.Concurrent
 import Control.Exception
 import Control.Monad
 import Data.String.Interpolate
@@ -22,7 +21,7 @@ testRunWithFile executable fileContents test = do
     writeFile "foo.sh" $ unindent fileContents
     when executable $ do
       unit $ cmd "chmod +x foo.sh"
-    testRun bindings "foo.sh" [] test
+    testRun bindings "foo.sh" [] $ \ _ -> test
 
 spec :: Spec
 spec = around_ inTempDirectory $ around_ (hSilence [stderr]) $ do
@@ -66,7 +65,7 @@ spec = around_ inTempDirectory $ around_ (hSilence [stderr]) $ do
   describe "when the file does not exist" $ do
     it "outputs a good error message" $ do
       let command = withMockBindings $ \ bindings -> timebox $ do
-            testRun bindings "foo.sh" [] (return ())
+            testRun bindings "foo.sh" [] $ \ _ -> return ()
       command `shouldThrow` errorCall "file not found: foo.sh"
 
   describe "terminal output" $ do
@@ -112,8 +111,8 @@ spec = around_ inTempDirectory $ around_ (hSilence [stderr]) $ do
           echo 1
         |]
         unit $ cmd "chmod +x foo.sh"
-        testRun bindings "foo.sh" [] $ do
-          writeFile "bar" "foo"
+        testRun bindings "foo.sh" [] $ \ mockFileSystem -> do
+          write mockFileSystem "bar" "foo"
       output `shouldBe` "reading audio snippet from foo.sh...\ndone\n"
 
     it "allows to watch additional files" $ do
@@ -123,9 +122,8 @@ spec = around_ inTempDirectory $ around_ (hSilence [stderr]) $ do
           echo 1
         |]
         unit $ cmd "chmod +x foo.sh"
-        testRun bindings "foo.sh" ["bar"] $ do
-          writeFile "bar" "foo"
-          threadDelay 10000
+        testRun bindings "foo.sh" ["bar"] $ \ mockFileSystem -> do
+          write mockFileSystem "bar" "foo"
       output `shouldBe`
         "reading audio snippet from foo.sh...\ndone\n" ++
         "bar changed, reading audio snippet from foo.sh...\ndone\n"
@@ -138,9 +136,8 @@ spec = around_ inTempDirectory $ around_ (hSilence [stderr]) $ do
         |]
         unit $ cmd "chmod +x foo.sh"
         unit $ cmd "mkdir bar"
-        testRun bindings "foo.sh" ["bar/baz"] $ do
-          writeFile "bar/baz" "foo"
-          threadDelay 10000
+        testRun bindings "foo.sh" ["bar/baz"] $ \ mockFileSystem -> do
+          write mockFileSystem "bar/baz" "foo"
       output `shouldBe`
         "reading audio snippet from foo.sh...\ndone\n" ++
         "bar/baz changed, reading audio snippet from foo.sh...\ndone\n"

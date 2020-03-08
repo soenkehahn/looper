@@ -7,18 +7,17 @@ import Control.Concurrent
 import Control.Exception
 import Control.Monad
 import Data.List
-import Data.String.Conversions
 import Foreign.C.Types
 import Foreign.Marshal.Array
 import Foreign.Ptr
 import Foreign.Storable
 import Loopnaut.CBindings
 import Loopnaut.Cli
+import Loopnaut.FileWatcher
+import Loopnaut.FileWatcher.Implementation
 import Loopnaut.Snippet.FromExecutable
 import Loopnaut.Snippet.FromSndFile
 import System.Directory
-import System.FilePath
-import System.INotify
 import System.IO
 
 create :: CBindings -> IO (Ptr CLoopnaut)
@@ -36,34 +35,17 @@ setBuffer bindings loopnaut list = do
   (array, len) <- allocateList list
   set_buffer bindings loopnaut array len
 
-run :: CBindings -> CliArgs -> IO a
-run bindings cliArgs = withRun bindings cliArgs $ do
+run :: CBindings -> FileWatcher -> CliArgs -> IO a
+run bindings fileWatcher cliArgs = withRun bindings fileWatcher cliArgs $ do
   forever $ threadDelay 1000000
 
-withRun :: CBindings -> CliArgs -> IO a -> IO a
-withRun bindings cliArgs action = do
+withRun :: CBindings -> FileWatcher -> CliArgs -> IO a -> IO a
+withRun bindings fileWatcher cliArgs action = do
   let CliArgs file watched = cliArgs
   loopnaut <- create bindings
   updateLoopnaut bindings loopnaut file file
-  watchFiles (file : watched)
+  watchFiles fileWatcher (file : watched)
     (\ changedFile -> updateLoopnaut bindings loopnaut file changedFile)
-    action
-
-watchFiles :: [File] -> (File -> IO ()) -> IO a -> IO a
-watchFiles files handler action = do
-  let dirs = nub $ map (dropFileName . canonicalPath) files
-  withINotify $ \ inotify -> do
-    forM_ dirs $ \ dir -> do
-      addWatch inotify [Close] (cs dir) $ \ event -> do
-        case event of
-          Closed{maybeFilePath = Just changed, wasWriteable = True} -> do
-            changedFile <- canonicalizePath (dir </> cs changed)
-            let triggers = filter (\ w -> canonicalPath w == changedFile) files
-            case triggers of
-              trigger : _ -> do
-                handler trigger
-              [] -> return ()
-          _ -> return ()
     action
 
 updateLoopnaut :: CBindings -> Ptr CLoopnaut -> File -> File -> IO ()
