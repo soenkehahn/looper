@@ -10,7 +10,6 @@ import Loopnaut
 import Loopnaut.CBindings
 import Loopnaut.Cli
 import Loopnaut.FileWatcher.Implementation
-import System.Directory
 import System.Timeout
 
 withMockBindings :: (CBindings -> IO ()) -> IO [([CFloat], Int)]
@@ -57,7 +56,7 @@ cp :: MockFileSystem -> FilePath -> FilePath -> IO ()
 cp (MockFileSystem handlerRef) source target = do
   withMVar handlerRef $ \ handler -> do
     unit $ cmd "cp" source target
-    handler =<< canonicalizePath target
+    handler target
 
 rm :: MockFileSystem -> FilePath -> IO ()
 rm (MockFileSystem handlerRef) file = do
@@ -68,4 +67,4 @@ write :: MockFileSystem -> FilePath -> String -> IO ()
 write (MockFileSystem handlerRef) file contents = do
   withMVar handlerRef $ \ handler -> do
     writeFile file contents
-    handler =<< canonicalizePath file
+    handler file
