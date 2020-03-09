@@ -4,6 +4,7 @@
 module LoopnautSpec where
 
 import Development.Shake
+import Loopnaut.Cli
 import Foreign.C.Types
 import Data.IORef
 import Loopnaut
@@ -43,7 +44,8 @@ spec = around_ (hSilence [stderr]) $ do
     it "does execute the given action" $ do
       _ <- withMockBindings $ \ bindings -> do
         ref <- newIORef ""
-        testRun bindings "test/test-sound-1.wav" [] $ \ _ -> writeIORef ref "foo"
+        testRun bindings (CliArgs "test/test-sound-1.wav" []) $ \ _ ->
+          writeIORef ref "foo"
         readIORef ref `shouldReturn` "foo"
       return ()
 
@@ -77,5 +79,4 @@ testWhileLoopnautIsRunning test = do
         unit $ cmd "cp" (repoDir </> "test/test-sound-1.wav") "test-sound-1.wav"
         unit $ cmd "cp" (repoDir </> "test/test-sound-2.wav") "test-sound-2.wav"
         unit $ cmd "cp test-sound-1.wav current.wav"
-        testRun bindings "current.wav" [] $ \ mockFileSystem -> do
-          test mockFileSystem
+        testRun bindings (CliArgs "current.wav" []) test

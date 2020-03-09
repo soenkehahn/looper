@@ -4,6 +4,7 @@
 module ExecutableSpec where
 
 import Control.Exception
+import Loopnaut.Cli
 import Control.Monad
 import Data.String.Interpolate
 import Data.String.Interpolate.Util
@@ -21,7 +22,7 @@ testRunWithFile executable fileContents test = do
     writeFile "foo.sh" $ unindent fileContents
     when executable $ do
       unit $ cmd "chmod +x foo.sh"
-    testRun bindings "foo.sh" [] $ \ _ -> test
+    testRun bindings (CliArgs "foo.sh" []) $ \ _ -> test
 
 spec :: Spec
 spec = around_ inTempDirectory $ around_ (hSilence [stderr]) $ do
@@ -65,7 +66,7 @@ spec = around_ inTempDirectory $ around_ (hSilence [stderr]) $ do
   describe "when the file does not exist" $ do
     it "outputs a good error message" $ do
       let command = withMockBindings $ \ bindings -> timebox $ do
-            testRun bindings "foo.sh" [] $ \ _ -> return ()
+            testRun bindings (CliArgs "foo.sh" []) $ \ _ -> return ()
       command `shouldThrow` errorCall "file not found: foo.sh"
 
   describe "terminal output" $ do
@@ -111,7 +112,7 @@ spec = around_ inTempDirectory $ around_ (hSilence [stderr]) $ do
           echo 1
         |]
         unit $ cmd "chmod +x foo.sh"
-        testRun bindings "foo.sh" [] $ \ mockFileSystem -> do
+        testRun bindings (CliArgs "foo.sh" []) $ \ mockFileSystem -> do
           write mockFileSystem "bar" "foo"
       output `shouldBe` "reading audio snippet from foo.sh...\ndone\n"
 
@@ -122,7 +123,7 @@ spec = around_ inTempDirectory $ around_ (hSilence [stderr]) $ do
           echo 1
         |]
         unit $ cmd "chmod +x foo.sh"
-        testRun bindings "foo.sh" ["bar"] $ \ mockFileSystem -> do
+        testRun bindings (CliArgs "foo.sh" ["bar"]) $ \ mockFileSystem -> do
           write mockFileSystem "bar" "foo"
       output `shouldBe`
         "reading audio snippet from foo.sh...\ndone\n" ++
@@ -136,7 +137,7 @@ spec = around_ inTempDirectory $ around_ (hSilence [stderr]) $ do
         |]
         unit $ cmd "chmod +x foo.sh"
         unit $ cmd "mkdir bar"
-        testRun bindings "foo.sh" ["bar/baz"] $ \ mockFileSystem -> do
+        testRun bindings (CliArgs "foo.sh" ["bar/baz"]) $ \ mockFileSystem -> do
           write mockFileSystem "bar/baz" "foo"
       output `shouldBe`
         "reading audio snippet from foo.sh...\ndone\n" ++

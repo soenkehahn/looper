@@ -1,7 +1,6 @@
 module Loopnaut.FileWatcher.ImplementationSpec (spec) where
 
 import Test.Hspec
-import System.Directory
 import Control.Concurrent
 import Data.Function
 import Control.Exception
@@ -99,11 +98,10 @@ spec = around_ inTempDirectory $ describe "fileWatcher" $ do
       let handle file = do
             contents <- readFile file
             modify ref (++ [contents])
-            appendFile "/tmp/foo" "handled\n"
       watchFiles fileWatcher ["file"] handle $ do
         _ <- forkIO $ do
           threadDelay 50000
-          removeFile "file"
+          unit $ cmd "rm file"
           threadDelay 50000
           writeFile "file" "bar"
         waitFor ((>= 1) . length <$> readMVar ref)

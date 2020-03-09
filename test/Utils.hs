@@ -34,12 +34,13 @@ timebox action = do
   _ <- timeout 400000 action
   return ()
 
-testRun :: CBindings -> FilePath -> [FilePath] -> (MockFileSystem -> IO a) -> IO a
-testRun bindings file watched test = do
-  let cliArgs = CliArgs file watched
+testRun :: CBindings -> CliArgs -> (MockFileSystem -> IO a) -> IO a
+testRun bindings cliArgs test = do
   (mockFileWatcher, mockFileSystem) <- mkMockFileWatcher
   withRun bindings mockFileWatcher cliArgs $ do
     test mockFileSystem
+
+data MockFileSystem = MockFileSystem (MVar (Map FilePath (FilePath -> IO ())))
 
 mkMockFileWatcher :: IO (FileWatcher, MockFileSystem)
 mkMockFileWatcher = do
@@ -56,13 +57,11 @@ mkMockFileWatcher = do
       mockFileSystem = MockFileSystem handlers
   return (fileWatcher, mockFileSystem)
 
-data MockFileSystem = MockFileSystem (MVar (Map FilePath (FilePath -> IO ())))
-
 triggerHandlers :: MockFileSystem -> FilePath -> IO ()
 triggerHandlers (MockFileSystem handlers) file =
   withMVar handlers $ \ map -> do
     case map !? file of
-      Just h -> h file
+      Just handle -> handle file
       Nothing -> return ()
 
 cp :: MockFileSystem -> FilePath -> FilePath -> IO ()
