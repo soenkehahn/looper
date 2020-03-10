@@ -1,9 +1,9 @@
 module Utils where
 
 import Control.Concurrent
+import Data.IORef
 import Data.List (foldl')
 import Data.Map
-import Data.IORef
 import Data.Traversable
 import Development.Shake
 import Foreign.C.Types
@@ -11,7 +11,7 @@ import Foreign.Marshal.Array
 import Loopnaut
 import Loopnaut.CBindings
 import Loopnaut.Cli
-import Loopnaut.FileWatcher
+import Loopnaut.FileWatcher.Common
 import System.Timeout
 
 withMockBindings :: (CBindings -> IO ()) -> IO [([CFloat], Int)]
