@@ -13,7 +13,7 @@ import Foreign.Ptr
 import Foreign.Storable
 import Loopnaut.CBindings
 import Loopnaut.Cli
-import Loopnaut.FileWatcher
+import Loopnaut.FileWatcher.Common
 import Loopnaut.Snippet.FromExecutable
 import Loopnaut.Snippet.FromSndFile
 import System.Directory

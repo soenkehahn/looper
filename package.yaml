@@ -26,7 +26,14 @@ when:
     dependencies:
       - hinotify
   else:
-    buildable: false
+    when:
+      condition: os(darwin)
+      then:
+        source-dirs: src/darwin
+        dependencies:
+          - hfsevents
+      else:
+        buildable: false
 
 executables:
   loopnaut:
