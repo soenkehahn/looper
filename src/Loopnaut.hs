@@ -48,7 +48,7 @@ withRun bindings fileWatcher cliArgs action = do
     action
 
 updateLoopnaut :: CBindings -> Ptr CLoopnaut -> FilePath -> FilePath -> IO ()
-updateLoopnaut bindings loopnaut file changedFile = do
+updateLoopnaut bindings loopnaut file changedFile = catchExceptions $ do
   hPutStr stderr $
     (if file /= changedFile then changedFile ++ " changed, " else "") ++
     "reading audio snippet from " ++ file ++ "...\n"
@@ -61,6 +61,10 @@ updateLoopnaut bindings loopnaut file changedFile = do
     (readFromSndfile file)
   hPutStrLn stderr "done"
   setBuffer bindings loopnaut (map realToFrac buffer)
+
+catchExceptions :: IO () -> IO ()
+catchExceptions action = catch action $ \ (exception :: SomeException) -> do
+  hPutStrLn stderr (show exception)
 
 tryReaders :: FilePath -> IO FromExecutable -> IO FromSndfile -> IO [Double]
 tryReaders file readFromExecutable readFromSndFile = do
