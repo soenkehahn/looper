@@ -12,9 +12,10 @@ fileWatcher = FileWatcher {
   watchFiles = \ files handle action -> do
     if (length files >= 1) then do
       wrapCallback <- callbackExceptionPropagator
-      let start = eventStreamCreate files 0 True False True $ \ event -> wrapCallback $ do
-            let triggeringEvent = not $ any (flagIsSet event)
-                  [EventFlagItemRemoved, EventFlagItemRenamed]
+      let start = eventStreamCreate files 0.2 False False True $ \ event -> wrapCallback $ do
+            let triggeringEvent =
+                  not (any (flagIsSet event) [EventFlagItemRemoved, EventFlagItemRenamed]) &&
+                  flagIsSet event EventFlagItemModified
             when triggeringEvent $ do
               let changed = eventPath event
               triggers <- filterM (=== changed) files
