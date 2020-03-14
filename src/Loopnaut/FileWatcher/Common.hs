@@ -4,6 +4,7 @@ module Loopnaut.FileWatcher.Common where
 
 import Control.Concurrent
 import Control.Exception
+import Control.Monad
 import System.Directory
 
 data FileWatcher = FileWatcher {
@@ -18,6 +19,13 @@ callbackExceptionPropagator = do
     exception <- readChan exceptionChannel
     throwTo outerThread exception
   return (handle (writeChan exceptionChannel :: SomeException -> IO ()))
+
+handleWhenWatched :: [FilePath] -> FilePath -> (FilePath -> IO ()) -> IO ()
+handleWhenWatched watchedFiles changedFile handle = do
+  triggers <- filterM (=== changedFile) watchedFiles
+  case triggers of
+    trigger : _ -> handle trigger
+    [] -> return ()
 
 (===) :: FilePath -> FilePath -> IO Bool
 a === b = do

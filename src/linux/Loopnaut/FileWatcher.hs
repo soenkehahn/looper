@@ -9,19 +9,15 @@ import System.INotify
 
 fileWatcher :: FileWatcher
 fileWatcher = FileWatcher {
-  watchFiles = \ files handler action -> do
-    let dirs = nub $ map dropFileName files
+  watchFiles = \ watchedFiles handler action -> do
+    let dirs = nub $ map dropFileName watchedFiles
     wrapCallback <- callbackExceptionPropagator
     withINotify $ \ inotify -> do
       forM_ dirs $ \ dir -> do
         addWatch inotify [Close] (cs dir) $ \ event -> wrapCallback $ do
           case event of
-            Closed{maybeFilePath = Just file, wasWriteable = True} -> do
-              let changed = dir </> cs file
-              triggers <- filterM (=== changed) files
-              case triggers of
-                trigger : _ -> handler trigger
-                [] -> return ()
+            Closed{maybeFilePath = Just changedFile, wasWriteable = True} -> do
+              handleWhenWatched watchedFiles (dir </> cs changedFile) handler
             _ -> return ()
       action
 }

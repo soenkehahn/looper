@@ -9,19 +9,15 @@ import System.OSX.FSEvents
 
 fileWatcher :: FileWatcher
 fileWatcher = FileWatcher {
-  watchFiles = \ files handle action -> do
-    if (length files >= 1) then do
+  watchFiles = \ watchedFiles handle action -> do
+    if (length watchedFiles >= 1) then do
       wrapCallback <- callbackExceptionPropagator
-      let start = eventStreamCreate files 0.2 False False True $ \ event -> wrapCallback $ do
-            let triggeringEvent =
+      let start = eventStreamCreate watchedFiles 0.2 False False True $ \ event -> wrapCallback $ do
+            let isTriggeringEvent =
                   not (any (flagIsSet event) [EventFlagItemRemoved, EventFlagItemRenamed]) &&
                   flagIsSet event EventFlagItemModified
-            when triggeringEvent $ do
-              let changed = eventPath event
-              triggers <- filterM (=== changed) files
-              case triggers of
-                trigger : _ -> handle trigger
-                [] -> return ()
+            when isTriggeringEvent $ do
+              handleWhenWatched watchedFiles (eventPath event) handle
       bracket start eventStreamDestroy (const action)
     else do
       action
