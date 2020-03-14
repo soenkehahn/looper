@@ -7,7 +7,7 @@ import Development.Shake
 import Test.Hspec
 
 spec :: Spec
-spec = do
+spec = describe "LoopBufferSpec" $ do
   describe "loop_buffer" $ do
     it "c test-suite" $ do
       Stdout (words -> libsFlags) <- cmd "pkg-config --libs portaudio-2.0"

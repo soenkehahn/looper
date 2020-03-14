@@ -17,7 +17,7 @@ import Test.Mockery.Directory
 import Utils
 
 spec :: Spec
-spec = around_ (hSilence [stderr]) $ do
+spec = describe "LoopnautSpec" $ around_ (hSilence [stderr]) $ do
   describe "setBuffer" $ do
     it "plays back a buffer" $ do
       [(array, len)] <- withMockBindings $ \ bindings -> do
