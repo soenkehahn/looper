@@ -25,7 +25,7 @@ testRunWithFile executable fileContents test = do
     testRun bindings (CliArgs "foo.sh" []) $ \ _ -> test
 
 spec :: Spec
-spec = around_ inTempDirectory $ around_ (hSilence [stderr]) $ do
+spec = describe "ExecutableSpec" $ around_ inTempDirectory $ around_ (hSilence [stderr]) $ do
   describe "when given an executable file" $ do
     it "executes the file and reads the sound samples from its stdout" $ do
       result <- testRunWithFile True [i|

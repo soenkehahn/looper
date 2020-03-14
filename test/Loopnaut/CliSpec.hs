@@ -10,7 +10,7 @@ testWithArgs args test = do
   withArgs args (withCliArgs test)
 
 spec :: Spec
-spec = do
+spec = describe "CliSpec" $ do
   describe "withCliArgs" $ do
     it "parses the main file as a positional argument" $ do
       testWithArgs ["foo"] $ \ args -> do
