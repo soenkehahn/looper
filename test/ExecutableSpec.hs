@@ -38,51 +38,31 @@ spec = around_ inTempDirectory $ around_ (hSilence [stderr]) $ do
 
     describe "when the output format is invalid" $ do
       it "outputs a good error message" $ do
-        let command = testRunWithFile True [i|
-                #!/usr/bin/env bash
-                echo foo
-              |] (return ())
-        command `shouldThrow` (errorCall "foo.sh wrote a line to stdout that cannot be parsed as a number:\nfoo")
-
-    describe "when the file returns a non-zero exit code" $ do
-      it "outputs a good error message" $ do
-        let command = testRunWithFile True [i|
-                #!/usr/bin/env bash
-                false
-              |] (return ())
-        command `shouldThrow` (errorCall "foo.sh failed with exit code 1")
+        output <- hCapture_ [stderr] $ testRunWithFile True [i|
+          #!/usr/bin/env bash
+          echo foo
+        |] (return ())
+        output `shouldContain` "foo.sh wrote a line to stdout that cannot be parsed as a number:\nfoo"
 
   describe "when file is neither executable nor a soundfile" $ do
     it "outputs a good error message" $ do
-      let command = testRunWithFile False [i|
-              foo
-            |] (return ())
+      output <- hCapture_ [stderr] $ testRunWithFile False [i|
+        foo
+      |] (return ())
       let expected = unindent $ [i|
         foo.sh is neither an executable (the executable flag is not set)
         nor is it a sound file:
           File contains data in an unknown format.|]
-      command `shouldThrow` errorCall expected
+      output `shouldContain` expected
 
   describe "when the file does not exist" $ do
     it "outputs a good error message" $ do
-      let command = withMockBindings $ \ bindings -> timebox $ do
-            testRun bindings (CliArgs "foo.sh" []) $ \ _ -> return ()
-      command `shouldThrow` errorCall "file not found: foo.sh"
+      output <- hCapture_ [stderr] $ withMockBindings $ \ bindings -> timebox $ do
+        testRun bindings (CliArgs "foo.sh" []) $ \ _ -> return ()
+      output `shouldContain` "file not found: foo.sh"
 
   describe "terminal output" $ do
-    it "outputs a message when starting to read the audio snippet" $ do
-      output <-
-        hCapture_ [stderr] $
-        handle (\ (_ :: ErrorCall) -> return ()) $ do
-          _ <- testRunWithFile True [i|
-            #!/usr/bin/env bash
-            echo 1
-            false
-          |] (return ())
-          return ()
-      output `shouldBe` "reading audio snippet from foo.sh...\n"
-
-    it "outputs a message when finishing to read the audio snippet" $ do
+    it "outputs a message when starting and finishing to read the audio snippet" $ do
       output <-
         hCapture_ [stderr] $
         handle (\ (_ :: ErrorCall) -> return ()) $ do
@@ -103,6 +83,69 @@ spec = around_ inTempDirectory $ around_ (hSilence [stderr]) $ do
           |] (return ())
           return ()
       output `shouldBe` "reading audio snippet from foo.sh...\nfoo\ndone\n"
+
+  describe "executable failures with non-zero exit codes" $ do
+    describe "when the initial executable fails" $ do
+      it "plays nothing but waits for the executable to change" $ do
+        result <- withMockBindings $ \ bindings -> do
+          writeFile "foo.sh" $ unindent [i|
+            #!/usr/bin/env bash
+            exit 1
+          |]
+          unit $ cmd "chmod +x foo.sh"
+          testRun bindings (CliArgs "foo.sh" []) $ \ mockFileSystem -> do
+            write mockFileSystem "foo.sh" $ unindent [i|
+              #!/usr/bin/env bash
+              echo 42
+            |]
+        result `shouldBe` [([42], 1)]
+
+    describe "when the executable is changed to a failing one" $ do
+      it "keeps playing the previous loop" $ do
+        result <- withMockBindings $ \ bindings -> do
+          writeFile "foo.sh" $ unindent [i|
+            #!/usr/bin/env bash
+            echo 42
+          |]
+          unit $ cmd "chmod +x foo.sh"
+          testRun bindings (CliArgs "foo.sh" []) $ \ mockFileSystem -> do
+            write mockFileSystem "foo.sh" $ unindent [i|
+              #!/usr/bin/env bash
+              exit 1
+            |]
+        result `shouldBe` [([42], 1)]
+
+      it "waits for another modification" $ do
+        result <- withMockBindings $ \ bindings -> do
+          writeFile "foo.sh" $ unindent [i|
+            #!/usr/bin/env bash
+            echo 42
+          |]
+          unit $ cmd "chmod +x foo.sh"
+          testRun bindings (CliArgs "foo.sh" []) $ \ mockFileSystem -> do
+            write mockFileSystem "foo.sh" $ unindent [i|
+              #!/usr/bin/env bash
+              exit 1
+            |]
+            write mockFileSystem "foo.sh" $ unindent [i|
+              #!/usr/bin/env bash
+              echo 23
+            |]
+        result `shouldBe` [([42], 1), ([23], 1)]
+
+      it "outputs the thrown exception" $ do
+        output <- hCapture_ [stderr] $ withMockBindings $ \ bindings -> do
+          writeFile "foo.sh" $ unindent [i|
+            #!/usr/bin/env bash
+            echo 42
+          |]
+          unit $ cmd "chmod +x foo.sh"
+          testRun bindings (CliArgs "foo.sh" []) $ \ mockFileSystem -> do
+            write mockFileSystem "foo.sh" $ unindent [i|
+              #!/usr/bin/env bash
+              exit 1
+            |]
+        output `shouldContain` "failed with exit code 1"
 
   describe "file change detection" $ do
     it "only watches the given file" $ do
