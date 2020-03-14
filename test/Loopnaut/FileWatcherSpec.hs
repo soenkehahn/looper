@@ -1,4 +1,4 @@
-module Loopnaut.FileWatcher.ImplementationSpec (spec) where
+module Loopnaut.FileWatcherSpec (spec) where
 
 import Control.Concurrent
 import Control.Exception
