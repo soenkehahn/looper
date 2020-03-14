@@ -21,8 +21,10 @@ writeMVar ref a = do
 modify :: MVar a -> (a -> a) -> IO ()
 modify ref f = modifyMVar_ ref (\ old -> return (f old))
 
-waitFor :: IO Bool -> IO ()
-waitFor action = do
+waitForAndFork :: IO Bool -> IO () -> IO ()
+waitForAndFork action concurrentAction = do
+  waiter <- newEmptyMVar
+  _ <- forkIO (concurrentAction `finally` putMVar waiter ())
   result <- timeout 1000000 $ fix $ \ loop -> do
     condition <- action
     if condition
@@ -30,8 +32,9 @@ waitFor action = do
       else do
         threadDelay 10000
         loop
+  takeMVar waiter
   case result of
-    Nothing -> throwIO $ ErrorCall "waitFor took too long"
+    Nothing -> throwIO $ ErrorCall "waitForAndFork took too long"
     Just () -> return ()
 
 disableOnTravisForMacOS :: Spec -> Spec
@@ -47,54 +50,49 @@ spec = disableOnTravisForMacOS $ around_ inTempDirectory $ describe "fileWatcher
     writeFile "file" "foo"
     ref <- newMVar False
     watchFiles fileWatcher ["file"] (\ _ -> writeMVar ref True) $ do
-      _ <- forkIO $ do
+      waitForAndFork (readMVar ref) $ do
         threadDelay 50000
         writeFile "file" "bar"
-      waitFor (readMVar ref)
 
   it "propagates errors from handlers" $ do
     writeFile "file" "foo"
     let handle _file = do
           throwIO $ ErrorCall "exception from handler"
     let action = watchFiles fileWatcher ["file"] handle $ do
-          _ <- forkIO $ do
+          waitForAndFork (return False) $ do
             threadDelay 50000
             writeFile "file" "bar"
-          waitFor (return False)
     action `shouldThrow` errorCall "exception from handler"
 
   it "passes in the changed file to the handler" $ do
     writeFile "file" "foo"
     ref <- newMVar Nothing
     watchFiles fileWatcher ["file"] (writeMVar ref . Just) $ do
-      _ <- forkIO $ do
+      waitForAndFork ((Nothing /=) <$> readMVar ref) $ do
         threadDelay 50000
         writeFile "file" "bar"
-      waitFor ((Nothing /=) <$> readMVar ref)
     readMVar ref `shouldReturn` Just "file"
 
   it "works multiple times" $ do
     writeFile "file" "foo"
     ref <- newMVar (0 :: Integer)
     watchFiles fileWatcher ["file"] (\ _ -> modify ref (+ 1)) $ do
-      _ <- forkIO $ do
+      waitForAndFork ((2 ==) <$> readMVar ref) $ do
         threadDelay 50000
         writeFile "file" "bar"
         unit $ cmd "sync"
         writeFile "file" "baz"
-      waitFor ((2 ==) <$> readMVar ref)
 
   it "allows to watch multiple files" $ do
     writeFile "a" "foo"
     writeFile "b" "foo"
     ref <- newMVar []
     watchFiles fileWatcher ["a", "b"] (\ file -> modify ref (++ [file])) $ do
-      _ <- forkIO $ do
+      waitForAndFork ((>= 2) . length <$> readMVar ref) $ do
         threadDelay 50000
         writeFile "a" "bar"
         threadDelay 50000
         writeFile "b" "baz"
-      waitFor ((>= 2) . length <$> readMVar ref)
     Data.Set.fromList <$> readMVar ref `shouldReturn` Data.Set.fromList ["a", "b"]
 
   describe "when first removing the file" $ do
@@ -106,12 +104,11 @@ spec = disableOnTravisForMacOS $ around_ inTempDirectory $ describe "fileWatcher
             contents <- readFile file
             modify ref (++ [contents])
       watchFiles fileWatcher ["file"] handle $ do
-        _ <- forkIO $ do
+        waitForAndFork ((>= 1) . length <$> readMVar ref) $ do
           threadDelay 50000
           unit $ cmd "rm file"
           threadDelay 50000
           writeFile "file" "bar"
-        waitFor ((>= 1) . length <$> readMVar ref)
       readMVar ref `shouldReturn` ["bar"]
 
     it "triggers once when recreating the file by copying" $ do
@@ -123,13 +120,28 @@ spec = disableOnTravisForMacOS $ around_ inTempDirectory $ describe "fileWatcher
             contents <- readFile file
             modify ref (++ [contents])
       watchFiles fileWatcher ["target"] handle $ do
-        _ <- forkIO $ do
+        waitForAndFork ((>= 1) . length <$> readMVar ref) $ do
           threadDelay 50000
           unit $ cmd "rm target"
           threadDelay 50000
           unit $ cmd "cp source target"
-        waitFor ((>= 1) . length <$> readMVar ref)
       readMVar ref `shouldReturn` ["source-contents"]
+
+  describe "when moving the file away" $ do
+    it "triggers once when recreating the file" $ do
+      writeFile "file" "foo"
+      threadDelay 50000
+      ref <- newMVar []
+      let handle file = do
+            contents <- readFile file
+            modify ref (++ [contents])
+      watchFiles fileWatcher ["file"] handle $ do
+        waitForAndFork ((>= 1) . length <$> readMVar ref) $ do
+          threadDelay 50000
+          unit $ cmd "mv file away"
+          threadDelay 50000
+          writeFile "file" "bar"
+      readMVar ref `shouldReturn` ["bar"]
 
   it "passes correct files into handlers for files in subdirectories" $ do
     unit $ cmd "mkdir dir"
@@ -137,10 +149,9 @@ spec = disableOnTravisForMacOS $ around_ inTempDirectory $ describe "fileWatcher
     threadDelay 50000
     ref <- newMVar Nothing
     watchFiles fileWatcher ["dir/file"] (writeMVar ref . Just) $ do
-      _ <- forkIO $ do
+      waitForAndFork ((Nothing /=) <$> readMVar ref) $ do
         threadDelay 50000
         writeFile "dir/file" "bar"
-      waitFor ((Nothing /=) <$> readMVar ref)
     readMVar ref `shouldReturn` Just "dir/file"
 
   it "doesn't trigger for other files in the same directory" $ do
@@ -149,10 +160,9 @@ spec = disableOnTravisForMacOS $ around_ inTempDirectory $ describe "fileWatcher
     threadDelay 50000
     ref <- newMVar []
     watchFiles fileWatcher ["a"] (\ file -> modify ref (++ [file])) $ do
-      _ <- forkIO $ do
+      waitForAndFork ((>= 1) . length <$> readMVar ref) $ do
         threadDelay 50000
         writeFile "b" "bar"
         threadDelay 50000
         writeFile "a" "bar"
-      waitFor ((>= 1) . length <$> readMVar ref)
     readMVar ref `shouldReturn` ["a"]
