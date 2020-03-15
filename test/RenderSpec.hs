@@ -26,7 +26,7 @@ spec = describe "RenderSpec" $ do
       |]
       unit $ cmd "chmod +x foo.sh"
       (mockFileWatcher, _mockFileSystem) <- mkMockFileWatcher
-      run bindings mockFileWatcher (CliArgs "foo.sh" [] (Just "rendered.ogg"))
+      run bindings mockFileWatcher (Render "foo.sh" "rendered.ogg")
     (info, _ :: Maybe (BV.Buffer Double)) <- Snd.readFile "rendered.ogg"
     let expected = Info {
           frames = 3,

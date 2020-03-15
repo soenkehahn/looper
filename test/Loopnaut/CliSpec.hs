@@ -14,7 +14,7 @@ spec = describe "CliSpec" $ do
   describe "withCliArgs" $ do
     it "parses the main file as a positional argument" $ do
       testWithArgs ["foo"] $ \ args -> do
-        args `shouldBe` CliArgs "foo" [] Nothing
+        args `shouldBe` Loop "foo" []
 
     it "complains about no positional argument" $ do
       let command = testWithArgs [] $ \ _ -> do
@@ -37,4 +37,4 @@ spec = describe "CliSpec" $ do
 
     it "allows to pass in an output file with --render" $ do
       testWithArgs ["foo", "--render", "bar"] $ \ args -> do
-        args `shouldBe` CliArgs "foo" [] (Just "bar")
+        args `shouldBe` Render "foo" "bar"

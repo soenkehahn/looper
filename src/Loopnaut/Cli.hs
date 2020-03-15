@@ -10,11 +10,16 @@ import Control.Exception
 import Data.List
 import WithCli
 
-data CliArgs = CliArgs {
-  cliArgsFile :: FilePath,
-  cliArgsWatched :: [FilePath],
-  cliArgsOutputFile :: Maybe FilePath
-} deriving (Eq, Show, Generic)
+data CliArgs
+  = Loop {
+    cliArgsFile :: FilePath,
+    cliArgsWatched :: [FilePath]
+  }
+  | Render {
+    cliArgsFile :: FilePath,
+    cliArgsOutputFile :: FilePath
+  }
+  deriving (Eq, Show, Generic)
 
 data Inner = Inner {
   file :: [FilePath],
@@ -40,7 +45,9 @@ withCliArgs action = do
   let modifiers = [UseForPositionalArguments "file" "SNIPPETFILE"]
   withCliModified modifiers $
     \ (Inner files (map path -> watched) (fmap path -> render)) -> case files of
-      [file] -> action (CliArgs file watched render)
+      [file] -> case render of
+        Nothing -> action (Loop file watched)
+        Just render -> action (Render file render)
       [] -> throwIO $ ErrorCall $ "no main file given"
       _ : _ : _ -> throwIO $ ErrorCall $
         "multiple main files given: " ++
