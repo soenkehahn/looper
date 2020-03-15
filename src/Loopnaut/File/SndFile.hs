@@ -1,6 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Loopnaut.Snippet.FromSndFile where
+module Loopnaut.File.SndFile where
 
 import Control.Exception
 import Data.Vector.Storable as V

@@ -13,9 +13,9 @@ import Foreign.Ptr
 import Foreign.Storable
 import Loopnaut.CBindings
 import Loopnaut.Cli
+import Loopnaut.File.Executable
+import Loopnaut.File.SndFile
 import Loopnaut.FileWatcher.Common
-import Loopnaut.Snippet.FromExecutable
-import Loopnaut.Snippet.FromSndFile
 import System.Directory
 import System.IO
 
