@@ -36,15 +36,14 @@ setBuffer bindings loopnaut list = do
 
 run :: CBindings -> FileWatcher -> CliArgs -> IO ()
 run bindings fileWatcher cliArgs = case cliArgs of
-  Loop _ _ -> withRun bindings fileWatcher cliArgs $ do
+  Loop file watched -> withRun bindings fileWatcher file watched $ do
     forever $ threadDelay 1000000
   Render file outputFile -> do
     buffer <- tryReaders file (readFromExecutable file) (readFromSndfile file)
     writeToSndfile outputFile buffer
 
-withRun :: CBindings -> FileWatcher -> CliArgs -> IO a -> IO a
-withRun bindings fileWatcher cliArgs action = do
-  let Loop file watched = cliArgs
+withRun :: CBindings -> FileWatcher -> FilePath -> [FilePath] -> IO a -> IO a
+withRun bindings fileWatcher file watched action = do
   loopnaut <- create bindings
   updateLoopnaut bindings loopnaut file file
   watchFiles fileWatcher (file : watched)
