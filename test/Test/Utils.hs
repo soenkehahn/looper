@@ -1,4 +1,4 @@
-module Utils where
+module Test.Utils where
 
 import Control.Concurrent
 import Data.IORef

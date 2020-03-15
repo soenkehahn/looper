@@ -14,7 +14,7 @@ import System.IO
 import System.IO.Silently
 import Test.Hspec
 import Test.Mockery.Directory
-import Utils
+import Test.Utils
 
 testRunWithFile :: Bool -> String -> IO () -> IO [([CFloat], Int)]
 testRunWithFile executable fileContents test = do
