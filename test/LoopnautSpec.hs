@@ -14,7 +14,7 @@ import System.IO
 import System.IO.Silently
 import Test.Hspec
 import Test.Mockery.Directory
-import Utils
+import Test.Utils
 
 spec :: Spec
 spec = describe "LoopnautSpec" $ around_ (hSilence [stderr]) $ do
