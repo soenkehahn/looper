@@ -34,13 +34,17 @@ setBuffer bindings loopnaut list = do
   (array, len) <- allocateList list
   set_buffer bindings loopnaut array len
 
-run :: CBindings -> FileWatcher -> CliArgs -> IO a
-run bindings fileWatcher cliArgs = withRun bindings fileWatcher cliArgs $ do
-  forever $ threadDelay 1000000
+run :: CBindings -> FileWatcher -> CliArgs -> IO ()
+run bindings fileWatcher cliArgs = case cliArgs of
+  CliArgs _ _ Nothing -> withRun bindings fileWatcher cliArgs $ do
+    forever $ threadDelay 1000000
+  CliArgs file _ (Just outputFile) -> do
+    buffer <- tryReaders file (readFromExecutable file) (readFromSndfile file)
+    writeToSndfile outputFile buffer
 
 withRun :: CBindings -> FileWatcher -> CliArgs -> IO a -> IO a
 withRun bindings fileWatcher cliArgs action = do
-  let CliArgs file watched = cliArgs
+  let CliArgs file watched _ = cliArgs
   loopnaut <- create bindings
   updateLoopnaut bindings loopnaut file file
   watchFiles fileWatcher (file : watched)

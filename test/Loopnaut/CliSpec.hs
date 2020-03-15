@@ -14,7 +14,7 @@ spec = describe "CliSpec" $ do
   describe "withCliArgs" $ do
     it "parses the main file as a positional argument" $ do
       testWithArgs ["foo"] $ \ args -> do
-        args `shouldBe` CliArgs "foo" []
+        args `shouldBe` CliArgs "foo" [] Nothing
 
     it "complains about no positional argument" $ do
       let command = testWithArgs [] $ \ _ -> do
@@ -34,3 +34,7 @@ spec = describe "CliSpec" $ do
     it "allows to pass in multiple watched files with --watch" $ do
       testWithArgs ["foo", "--watch", "bar", "--watch", "baz"] $ \ args -> do
         cliArgsWatched args `shouldBe` ["bar", "baz"]
+
+    it "allows to pass in an output file with --render" $ do
+      testWithArgs ["foo", "--render", "bar"] $ \ args -> do
+        args `shouldBe` CliArgs "foo" [] (Just "bar")

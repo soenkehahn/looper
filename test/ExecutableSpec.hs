@@ -22,7 +22,7 @@ testRunWithFile executable fileContents test = do
     writeFile "foo.sh" $ unindent fileContents
     when executable $ do
       unit $ cmd "chmod +x foo.sh"
-    testRun bindings (CliArgs "foo.sh" []) $ \ _ -> test
+    testRun bindings (CliArgs "foo.sh" [] Nothing) $ \ _ -> test
 
 spec :: Spec
 spec = describe "ExecutableSpec" $ around_ inTempDirectory $ around_ (hSilence [stderr]) $ do
@@ -58,7 +58,7 @@ spec = describe "ExecutableSpec" $ around_ inTempDirectory $ around_ (hSilence [
   describe "when the file does not exist" $ do
     it "outputs a good error message" $ do
       output <- hCapture_ [stderr] $ withMockBindings $ \ bindings -> timebox $ do
-        testRun bindings (CliArgs "foo.sh" []) $ \ _ -> return ()
+        testRun bindings (CliArgs "foo.sh" [] Nothing) $ \ _ -> return ()
       output `shouldContain` "file not found: foo.sh"
 
   describe "terminal output" $ do
@@ -93,7 +93,7 @@ spec = describe "ExecutableSpec" $ around_ inTempDirectory $ around_ (hSilence [
             exit 1
           |]
           unit $ cmd "chmod +x foo.sh"
-          testRun bindings (CliArgs "foo.sh" []) $ \ mockFileSystem -> do
+          testRun bindings (CliArgs "foo.sh" [] Nothing) $ \ mockFileSystem -> do
             write mockFileSystem "foo.sh" $ unindent [i|
               #!/usr/bin/env bash
               echo 42
@@ -108,7 +108,7 @@ spec = describe "ExecutableSpec" $ around_ inTempDirectory $ around_ (hSilence [
             echo 42
           |]
           unit $ cmd "chmod +x foo.sh"
-          testRun bindings (CliArgs "foo.sh" []) $ \ mockFileSystem -> do
+          testRun bindings (CliArgs "foo.sh" [] Nothing) $ \ mockFileSystem -> do
             write mockFileSystem "foo.sh" $ unindent [i|
               #!/usr/bin/env bash
               exit 1
@@ -122,7 +122,7 @@ spec = describe "ExecutableSpec" $ around_ inTempDirectory $ around_ (hSilence [
             echo 42
           |]
           unit $ cmd "chmod +x foo.sh"
-          testRun bindings (CliArgs "foo.sh" []) $ \ mockFileSystem -> do
+          testRun bindings (CliArgs "foo.sh" [] Nothing) $ \ mockFileSystem -> do
             write mockFileSystem "foo.sh" $ unindent [i|
               #!/usr/bin/env bash
               exit 1
@@ -140,7 +140,7 @@ spec = describe "ExecutableSpec" $ around_ inTempDirectory $ around_ (hSilence [
             echo 42
           |]
           unit $ cmd "chmod +x foo.sh"
-          testRun bindings (CliArgs "foo.sh" []) $ \ mockFileSystem -> do
+          testRun bindings (CliArgs "foo.sh" [] Nothing) $ \ mockFileSystem -> do
             write mockFileSystem "foo.sh" $ unindent [i|
               #!/usr/bin/env bash
               exit 1
@@ -155,7 +155,7 @@ spec = describe "ExecutableSpec" $ around_ inTempDirectory $ around_ (hSilence [
           echo 1
         |]
         unit $ cmd "chmod +x foo.sh"
-        testRun bindings (CliArgs "foo.sh" []) $ \ mockFileSystem -> do
+        testRun bindings (CliArgs "foo.sh" [] Nothing) $ \ mockFileSystem -> do
           write mockFileSystem "bar" "foo"
       output `shouldBe` "reading audio snippet from foo.sh...\ndone\n"
 
@@ -166,7 +166,7 @@ spec = describe "ExecutableSpec" $ around_ inTempDirectory $ around_ (hSilence [
           echo 1
         |]
         unit $ cmd "chmod +x foo.sh"
-        testRun bindings (CliArgs "foo.sh" ["bar"]) $ \ mockFileSystem -> do
+        testRun bindings (CliArgs "foo.sh" ["bar"] Nothing) $ \ mockFileSystem -> do
           write mockFileSystem "bar" "foo"
       output `shouldBe`
         "reading audio snippet from foo.sh...\ndone\n" ++
@@ -180,7 +180,7 @@ spec = describe "ExecutableSpec" $ around_ inTempDirectory $ around_ (hSilence [
         |]
         unit $ cmd "chmod +x foo.sh"
         unit $ cmd "mkdir bar"
-        testRun bindings (CliArgs "foo.sh" ["bar/baz"]) $ \ mockFileSystem -> do
+        testRun bindings (CliArgs "foo.sh" ["bar/baz"] Nothing) $ \ mockFileSystem -> do
           write mockFileSystem "bar/baz" "foo"
       output `shouldBe`
         "reading audio snippet from foo.sh...\ndone\n" ++
