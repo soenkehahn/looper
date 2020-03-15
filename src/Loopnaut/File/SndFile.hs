@@ -11,16 +11,16 @@ data FromSndfile
   = SndFileSuccess [Double]
   | SndFileError String
 
-readFromSndfile :: FilePath -> IO FromSndfile
-readFromSndfile file = do
+readFromSndFile :: FilePath -> IO FromSndfile
+readFromSndFile file = do
   result <- try (Snd.readFile file)
   return $ case result of
     Left (e :: Snd.Exception) -> SndFileError $ errorString e
     Right (_info, Just buffer) -> SndFileSuccess (toList (fromBuffer buffer))
     Right (_info, Nothing) -> SndFileError "empty file"
 
-writeToSndfile :: FilePath -> [Double] -> IO ()
-writeToSndfile file buffer = do
+writeToSndFile :: FilePath -> [Double] -> IO ()
+writeToSndFile file buffer = do
   let vector = fromList buffer
       info = Info {
         frames = (V.length vector),

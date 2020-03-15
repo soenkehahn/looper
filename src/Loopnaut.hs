@@ -1,7 +1,12 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ViewPatterns #-}
 
-module Loopnaut where
+module Loopnaut (
+  create,
+  setBuffer,
+  run,
+  withRun,
+) where
 
 import Control.Concurrent
 import Control.Exception
@@ -39,8 +44,8 @@ run bindings fileWatcher cliArgs = case cliArgs of
   Loop file watched -> withRun bindings fileWatcher file watched $ do
     forever $ threadDelay 1000000
   Render file outputFile -> do
-    buffer <- tryReaders file (readFromExecutable file) (readFromSndfile file)
-    writeToSndfile outputFile buffer
+    buffer <- readFromFile file
+    writeToSndFile outputFile buffer
 
 withRun :: CBindings -> FileWatcher -> FilePath -> [FilePath] -> IO a -> IO a
 withRun bindings fileWatcher file watched action = do
@@ -59,9 +64,7 @@ updateLoopnaut bindings loopnaut file changedFile = catchExceptions $ do
   exists <- doesFileExist file
   when (not exists) $ do
     throwIO $ ErrorCall ("file not found: " ++ file)
-  buffer <- tryReaders file
-    (readFromExecutable file)
-    (readFromSndfile file)
+  buffer <- readFromFile file
   hPutStrLn stderr "done"
   setBuffer bindings loopnaut (map realToFrac buffer)
 
@@ -69,14 +72,14 @@ catchExceptions :: IO () -> IO ()
 catchExceptions action = catch action $ \ (exception :: SomeException) -> do
   hPutStrLn stderr (show exception)
 
-tryReaders :: FilePath -> IO FromExecutable -> IO FromSndfile -> IO [Double]
-tryReaders file readFromExecutable readFromSndFile = do
-  fromExecutable <- readFromExecutable
+readFromFile :: FilePath -> IO [Double]
+readFromFile file = do
+  fromExecutable <- readFromExecutable file
   case fromExecutable of
     ExecutableSuccess result -> return result
     ExecutableDecodingError error -> throwIO $ ErrorCall error
     PermissionError -> do
-      fromSndFile <- readFromSndFile
+      fromSndFile <- readFromSndFile file
       case fromSndFile of
         SndFileSuccess result -> return result
         SndFileError error ->
