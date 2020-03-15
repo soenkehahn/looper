@@ -4,10 +4,10 @@
 module LoopnautSpec where
 
 import Development.Shake
-import Loopnaut.Cli
 import Foreign.C.Types
 import Data.IORef
 import Loopnaut
+import Loopnaut.CBindings
 import System.Directory
 import System.FilePath
 import System.IO
@@ -21,14 +21,14 @@ spec = describe "LoopnautSpec" $ around_ (hSilence [stderr]) $ do
   describe "setBuffer" $ do
     it "plays back a buffer" $ do
       [(array, len)] <- withMockBindings $ \ bindings -> do
-        buffer <- create bindings
+        buffer <- create_loopnaut bindings
         setBuffer bindings buffer [1, 2, 3]
       len `shouldBe` 3
       array `shouldBe` [1, 2, 3]
 
     it "allows to set a new buffer" $ do
       (last -> (array, len)) <- withMockBindings $ \ bindings -> do
-        buffer <- create bindings
+        buffer <- create_loopnaut bindings
         setBuffer bindings buffer [1, 2, 3]
         setBuffer bindings buffer [4, 5, 6, 7]
       len `shouldBe` 4
@@ -44,7 +44,7 @@ spec = describe "LoopnautSpec" $ around_ (hSilence [stderr]) $ do
     it "does execute the given action" $ do
       _ <- withMockBindings $ \ bindings -> do
         ref <- newIORef ""
-        testRun bindings (CliArgs "test/test-sound-1.wav" []) $ \ _ ->
+        testRun bindings "test/test-sound-1.wav" [] $ \ _ ->
           writeIORef ref "foo"
         readIORef ref `shouldReturn` "foo"
       return ()
@@ -79,4 +79,4 @@ testWhileLoopnautIsRunning test = do
         unit $ cmd "cp" (repoDir </> "test/test-sound-1.wav") "test-sound-1.wav"
         unit $ cmd "cp" (repoDir </> "test/test-sound-2.wav") "test-sound-2.wav"
         unit $ cmd "cp test-sound-1.wav current.wav"
-        testRun bindings (CliArgs "current.wav" []) test
+        testRun bindings "current.wav" [] test

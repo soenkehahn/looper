@@ -1,6 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Loopnaut.Snippet.FromExecutable where
+module Loopnaut.File.Executable where
 
 import Control.DeepSeq
 import Control.Exception

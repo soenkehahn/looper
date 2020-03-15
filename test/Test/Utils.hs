@@ -10,7 +10,6 @@ import Foreign.C.Types
 import Foreign.Marshal.Array
 import Loopnaut
 import Loopnaut.CBindings
-import Loopnaut.Cli
 import Loopnaut.FileWatcher.Common
 import System.Timeout
 
@@ -34,10 +33,10 @@ timebox action = do
   _ <- timeout 400000 action
   return ()
 
-testRun :: CBindings -> CliArgs -> (MockFileSystem -> IO a) -> IO a
-testRun bindings cliArgs test = do
+testRun :: CBindings -> FilePath -> [FilePath] -> (MockFileSystem -> IO a) -> IO a
+testRun bindings file watched test = do
   (mockFileWatcher, mockFileSystem) <- mkMockFileWatcher
-  withRun bindings mockFileWatcher cliArgs $ do
+  withRun bindings mockFileWatcher file watched $ do
     test mockFileSystem
 
 data MockFileSystem = MockFileSystem (MVar (Map FilePath (FilePath -> IO ())))

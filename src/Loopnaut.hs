@@ -1,7 +1,11 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ViewPatterns #-}
 
-module Loopnaut where
+module Loopnaut (
+  setBuffer,
+  run,
+  withRun,
+) where
 
 import Control.Concurrent
 import Control.Exception
@@ -13,14 +17,11 @@ import Foreign.Ptr
 import Foreign.Storable
 import Loopnaut.CBindings
 import Loopnaut.Cli
+import Loopnaut.File.Executable
+import Loopnaut.File.SndFile
 import Loopnaut.FileWatcher.Common
-import Loopnaut.Snippet.FromExecutable
-import Loopnaut.Snippet.FromSndFile
 import System.Directory
 import System.IO
-
-create :: CBindings -> IO (Ptr CLoopnaut)
-create = create_loopnaut
 
 allocateList :: Storable a => [a] -> IO (Ptr a, Int)
 allocateList list = do
@@ -34,14 +35,17 @@ setBuffer bindings loopnaut list = do
   (array, len) <- allocateList list
   set_buffer bindings loopnaut array len
 
-run :: CBindings -> FileWatcher -> CliArgs -> IO a
-run bindings fileWatcher cliArgs = withRun bindings fileWatcher cliArgs $ do
-  forever $ threadDelay 1000000
+run :: CBindings -> FileWatcher -> CliArgs -> IO ()
+run bindings fileWatcher cliArgs = case cliArgs of
+  Loop file watched -> withRun bindings fileWatcher file watched $ do
+    forever $ threadDelay 1000000
+  Render file outputFile -> do
+    buffer <- readFromFile file
+    writeToSndFile outputFile buffer
 
-withRun :: CBindings -> FileWatcher -> CliArgs -> IO a -> IO a
-withRun bindings fileWatcher cliArgs action = do
-  let CliArgs file watched = cliArgs
-  loopnaut <- create bindings
+withRun :: CBindings -> FileWatcher -> FilePath -> [FilePath] -> IO a -> IO a
+withRun bindings fileWatcher file watched action = do
+  loopnaut <- create_loopnaut bindings
   updateLoopnaut bindings loopnaut file file
   watchFiles fileWatcher (file : watched)
     (\ changedFile -> updateLoopnaut bindings loopnaut file changedFile)
@@ -56,9 +60,7 @@ updateLoopnaut bindings loopnaut file changedFile = catchExceptions $ do
   exists <- doesFileExist file
   when (not exists) $ do
     throwIO $ ErrorCall ("file not found: " ++ file)
-  buffer <- tryReaders file
-    (readFromExecutable file)
-    (readFromSndfile file)
+  buffer <- readFromFile file
   hPutStrLn stderr "done"
   setBuffer bindings loopnaut (map realToFrac buffer)
 
@@ -66,14 +68,14 @@ catchExceptions :: IO () -> IO ()
 catchExceptions action = catch action $ \ (exception :: SomeException) -> do
   hPutStrLn stderr (show exception)
 
-tryReaders :: FilePath -> IO FromExecutable -> IO FromSndfile -> IO [Double]
-tryReaders file readFromExecutable readFromSndFile = do
-  fromExecutable <- readFromExecutable
+readFromFile :: FilePath -> IO [Double]
+readFromFile file = do
+  fromExecutable <- readFromExecutable file
   case fromExecutable of
     ExecutableSuccess result -> return result
     ExecutableDecodingError error -> throwIO $ ErrorCall error
     PermissionError -> do
-      fromSndFile <- readFromSndFile
+      fromSndFile <- readFromSndFile file
       case fromSndFile of
         SndFileSuccess result -> return result
         SndFileError error ->
