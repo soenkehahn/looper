@@ -7,6 +7,7 @@ import Development.Shake
 import Foreign.C.Types
 import Data.IORef
 import Loopnaut
+import Loopnaut.CBindings
 import System.Directory
 import System.FilePath
 import System.IO
@@ -20,14 +21,14 @@ spec = describe "LoopnautSpec" $ around_ (hSilence [stderr]) $ do
   describe "setBuffer" $ do
     it "plays back a buffer" $ do
       [(array, len)] <- withMockBindings $ \ bindings -> do
-        buffer <- create bindings
+        buffer <- create_loopnaut bindings
         setBuffer bindings buffer [1, 2, 3]
       len `shouldBe` 3
       array `shouldBe` [1, 2, 3]
 
     it "allows to set a new buffer" $ do
       (last -> (array, len)) <- withMockBindings $ \ bindings -> do
-        buffer <- create bindings
+        buffer <- create_loopnaut bindings
         setBuffer bindings buffer [1, 2, 3]
         setBuffer bindings buffer [4, 5, 6, 7]
       len `shouldBe` 4

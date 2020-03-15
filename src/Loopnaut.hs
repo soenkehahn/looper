@@ -2,7 +2,6 @@
 {-# LANGUAGE ViewPatterns #-}
 
 module Loopnaut (
-  create,
   setBuffer,
   run,
   withRun,
@@ -23,9 +22,6 @@ import Loopnaut.File.SndFile
 import Loopnaut.FileWatcher.Common
 import System.Directory
 import System.IO
-
-create :: CBindings -> IO (Ptr CLoopnaut)
-create = create_loopnaut
 
 allocateList :: Storable a => [a] -> IO (Ptr a, Int)
 allocateList list = do
@@ -49,7 +45,7 @@ run bindings fileWatcher cliArgs = case cliArgs of
 
 withRun :: CBindings -> FileWatcher -> FilePath -> [FilePath] -> IO a -> IO a
 withRun bindings fileWatcher file watched action = do
-  loopnaut <- create bindings
+  loopnaut <- create_loopnaut bindings
   updateLoopnaut bindings loopnaut file file
   watchFiles fileWatcher (file : watched)
     (\ changedFile -> updateLoopnaut bindings loopnaut file changedFile)
