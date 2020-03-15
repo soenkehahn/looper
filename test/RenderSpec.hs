@@ -12,7 +12,7 @@ import Sound.File.Sndfile as Snd
 import Sound.File.Sndfile.Buffer.Vector as BV
 import Test.Hspec
 import Test.Mockery.Directory
-import Utils
+import Test.Utils
 
 spec :: Spec
 spec = describe "RenderSpec" $ do
