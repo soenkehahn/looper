@@ -6,6 +6,7 @@ import Control.Exception
 import Data.Vector.Storable as V
 import Sound.File.Sndfile as Snd
 import Sound.File.Sndfile.Buffer.Vector
+import System.FilePath
 
 data FromSndfile
   = SndFileSuccess [Double]
@@ -21,16 +22,26 @@ readFromSndFile file = do
 
 writeToSndFile :: FilePath -> [Double] -> IO ()
 writeToSndFile file buffer = do
+  format <- case takeExtension file of
+    ".ogg" -> return $ Format {
+      headerFormat = HeaderFormatOgg,
+      sampleFormat = SampleFormatVorbis,
+      endianFormat = EndianFile
+    }
+    ".wav" -> return $ Format {
+      headerFormat = HeaderFormatWav,
+      sampleFormat = SampleFormatPcm16,
+      endianFormat = EndianFile
+    }
+    extension -> throwIO $ ErrorCall $
+      "unknown audio file format: " <> extension <> "\n" <>
+      "please use .wav or .ogg"
   let vector = fromList buffer
       info = Info {
         frames = (V.length vector),
         samplerate = 44100,
         channels = 1,
-        format = Format {
-          headerFormat = HeaderFormatOgg,
-          sampleFormat = SampleFormatVorbis,
-          endianFormat = EndianFile
-        },
+        format = format,
         sections = 1,
         seekable = False
       }
