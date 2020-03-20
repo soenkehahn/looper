@@ -1,7 +1,7 @@
-module Loopnaut.CliSpec where
+module Looper.CliSpec where
 
 import Control.Exception
-import Loopnaut.Cli
+import Looper.Cli
 import System.Environment
 import Test.Hspec
 

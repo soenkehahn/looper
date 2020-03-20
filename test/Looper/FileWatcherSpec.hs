@@ -1,12 +1,12 @@
-module Loopnaut.FileWatcherSpec (spec) where
+module Looper.FileWatcherSpec (spec) where
 
 import Control.Concurrent
 import Control.Exception
 import Data.Function
 import Data.Set
 import Development.Shake hiding (getEnv)
-import Loopnaut.FileWatcher
-import Loopnaut.FileWatcher.Common
+import Looper.FileWatcher
+import Looper.FileWatcher.Common
 import System.Environment
 import System.Info
 import System.Timeout

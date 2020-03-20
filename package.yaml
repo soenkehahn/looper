@@ -1,4 +1,4 @@
-name: loopnaut
+name: looper
 
 ghc-options:
   - -Wall
@@ -36,8 +36,8 @@ when:
         buildable: false
 
 executables:
-  loopnaut:
-    main: loopnaut-exec.hs
+  looper:
+    main: looper-exec.hs
     c-sources:
       - src/loop_buffer.c
     pkg-config-dependencies: portaudio-2.0

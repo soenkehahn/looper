@@ -1,8 +1,8 @@
 
-import Loopnaut
-import Loopnaut.CBindings.FFI
-import Loopnaut.Cli
-import Loopnaut.FileWatcher
+import Looper
+import Looper.CBindings.FFI
+import Looper.Cli
+import Looper.FileWatcher
 
 main :: IO ()
 main = withCliArgs $ \ cliArgs -> do

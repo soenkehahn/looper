@@ -6,8 +6,8 @@ module RenderSpec where
 import Data.String.Interpolate
 import Data.String.Interpolate.Util
 import Development.Shake
-import Loopnaut
-import Loopnaut.Cli
+import Looper
+import Looper.Cli
 import Sound.File.Sndfile as Snd
 import Sound.File.Sndfile.Buffer.Vector as BV
 import Test.Hspec

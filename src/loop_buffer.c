@@ -2,15 +2,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-struct loopnaut {
+struct looper {
   float* array;
   int index;
   int length;
-  struct loopnaut* next;
+  struct looper* next;
 };
 
-struct loopnaut* create_empty_loopnaut() {
-  struct loopnaut* result = malloc(sizeof(struct loopnaut));
+struct looper* create_empty_looper() {
+  struct looper* result = malloc(sizeof(struct looper));
   result->array = NULL;
   result->index = 0;
   result->length = 0;
@@ -18,39 +18,39 @@ struct loopnaut* create_empty_loopnaut() {
   return result;
 }
 
-void set_buffer(struct loopnaut* loopnaut, float* array, int length) {
-  struct loopnaut* next = malloc(sizeof(struct loopnaut));
+void set_buffer(struct looper* looper, float* array, int length) {
+  struct looper* next = malloc(sizeof(struct looper));
   next->array = array;
   next->index = 0;
   next->length = length;
   next->next = NULL;
-  loopnaut->next = next;
+  looper->next = next;
 }
 
-float get_next_sample(struct loopnaut* loopnaut) {
-  if (loopnaut->index >= loopnaut->length && loopnaut->next != NULL) {
-    loopnaut->array = loopnaut->next->array;
-    loopnaut->index = loopnaut->next->index;
-    loopnaut->length = loopnaut->next->length;
-    loopnaut->next = NULL;
+float get_next_sample(struct looper* looper) {
+  if (looper->index >= looper->length && looper->next != NULL) {
+    looper->array = looper->next->array;
+    looper->index = looper->next->index;
+    looper->length = looper->next->length;
+    looper->next = NULL;
   }
-  if (loopnaut->length == 0) {
+  if (looper->length == 0) {
     return 0.0;
   }
-  if (loopnaut->index >= loopnaut->length) {
-    loopnaut->index = 0;
+  if (looper->index >= looper->length) {
+    looper->index = 0;
   }
-  float sample = loopnaut->array[loopnaut->index];
-  loopnaut->index++;
+  float sample = looper->array[looper->index];
+  looper->index++;
   return sample;
 }
 
-void start_portaudio(struct loopnaut* loopnaut);
+void start_portaudio(struct looper* looper);
 
-struct loopnaut* create_loopnaut() {
-  struct loopnaut* loopnaut = create_empty_loopnaut();
-  start_portaudio(loopnaut);
-  return loopnaut;
+struct looper* create_looper() {
+  struct looper* looper = create_empty_looper();
+  start_portaudio(looper);
+  return looper;
 }
 
 // portaudio stuff
@@ -63,11 +63,11 @@ static int paCallback(
   PaStreamCallbackFlags statusFlags,
   void* userdata
 ) {
-  struct loopnaut* loopnaut = (struct loopnaut*) userdata;
+  struct looper* looper = (struct looper*) userdata;
   float* out = (float*) outputBuffer;
 
   for(unsigned long i = 0; i < framesPerBuffer; i++) {
-    float sample = get_next_sample(loopnaut);
+    float sample = get_next_sample(looper);
     out[0] = sample; // left
     out[1] = sample; // right
     out += 2;
@@ -76,7 +76,7 @@ static int paCallback(
   return paContinue;
 }
 
-void start_portaudio(struct loopnaut* loopnaut) {
+void start_portaudio(struct looper* looper) {
   PaStreamParameters outputParameters;
   PaStream* stream;
   PaError err;
@@ -103,7 +103,7 @@ void start_portaudio(struct loopnaut* loopnaut) {
     1024,
     paClipOff,
     paCallback,
-    loopnaut
+    looper
   );
   if(err != paNoError) goto error;
 

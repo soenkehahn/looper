@@ -1,10 +1,10 @@
-module Loopnaut.FileWatcher (fileWatcher) where
+module Looper.FileWatcher (fileWatcher) where
 
 import Control.Exception
 import Control.Monad
 import Data.Bits
 import Data.Word
-import Loopnaut.FileWatcher.Common
+import Looper.FileWatcher.Common
 import System.OSX.FSEvents
 
 fileWatcher :: FileWatcher
