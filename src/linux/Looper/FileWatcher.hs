@@ -1,9 +1,9 @@
-module Loopnaut.FileWatcher (fileWatcher) where
+module Looper.FileWatcher (fileWatcher) where
 
 import Control.Monad
 import Data.List
 import Data.String.Conversions
-import Loopnaut.FileWatcher.Common
+import Looper.FileWatcher.Common
 import System.FilePath
 import System.INotify
 

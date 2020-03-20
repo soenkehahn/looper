@@ -1,7 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ViewPatterns #-}
 
-module Loopnaut (
+module Looper (
   setBuffer,
   run,
   withRun,
@@ -15,11 +15,11 @@ import Foreign.C.Types
 import Foreign.Marshal.Array
 import Foreign.Ptr
 import Foreign.Storable
-import Loopnaut.CBindings
-import Loopnaut.Cli
-import Loopnaut.File.Executable
-import Loopnaut.File.SndFile
-import Loopnaut.FileWatcher.Common
+import Looper.CBindings
+import Looper.Cli
+import Looper.File.Executable
+import Looper.File.SndFile
+import Looper.FileWatcher.Common
 import System.Directory
 import System.IO
 
@@ -30,10 +30,10 @@ allocateList list = do
   pokeArray array list
   return (array, len)
 
-setBuffer :: CBindings -> Ptr CLoopnaut -> [CFloat] -> IO ()
-setBuffer bindings loopnaut list = do
+setBuffer :: CBindings -> Ptr CLooper -> [CFloat] -> IO ()
+setBuffer bindings looper list = do
   (array, len) <- allocateList list
-  set_buffer bindings loopnaut array len
+  set_buffer bindings looper array len
 
 run :: CBindings -> FileWatcher -> CliArgs -> IO ()
 run bindings fileWatcher cliArgs = case cliArgs of
@@ -45,14 +45,14 @@ run bindings fileWatcher cliArgs = case cliArgs of
 
 withRun :: CBindings -> FileWatcher -> FilePath -> [FilePath] -> IO a -> IO a
 withRun bindings fileWatcher file watched action = do
-  loopnaut <- create_loopnaut bindings
-  updateLoopnaut bindings loopnaut file file
+  looper <- create_looper bindings
+  updateLooper bindings looper file file
   watchFiles fileWatcher (file : watched)
-    (\ changedFile -> updateLoopnaut bindings loopnaut file changedFile)
+    (\ changedFile -> updateLooper bindings looper file changedFile)
     action
 
-updateLoopnaut :: CBindings -> Ptr CLoopnaut -> FilePath -> FilePath -> IO ()
-updateLoopnaut bindings loopnaut file changedFile = catchExceptions $ do
+updateLooper :: CBindings -> Ptr CLooper -> FilePath -> FilePath -> IO ()
+updateLooper bindings looper file changedFile = catchExceptions $ do
   hPutStr stderr $
     (if file /= changedFile then changedFile ++ " changed, " else "") ++
     "reading audio snippet from " ++ file ++ "...\n"
@@ -62,7 +62,7 @@ updateLoopnaut bindings loopnaut file changedFile = catchExceptions $ do
     throwIO $ ErrorCall ("file not found: " ++ file)
   buffer <- readFromFile file
   hPutStrLn stderr "done"
-  setBuffer bindings loopnaut (map realToFrac buffer)
+  setBuffer bindings looper (map realToFrac buffer)
 
 catchExceptions :: IO () -> IO ()
 catchExceptions action = catch action $ \ (exception :: SomeException) -> do

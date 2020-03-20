@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE ViewPatterns #-}
 
-module Loopnaut.Cli (
+module Looper.Cli (
   CliArgs(..),
   withCliArgs,
 ) where

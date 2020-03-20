@@ -8,16 +8,16 @@ import Data.Traversable
 import Development.Shake
 import Foreign.C.Types
 import Foreign.Marshal.Array
-import Loopnaut
-import Loopnaut.CBindings
-import Loopnaut.FileWatcher.Common
+import Looper
+import Looper.CBindings
+import Looper.FileWatcher.Common
 import System.Timeout
 
 withMockBindings :: (CBindings -> IO ()) -> IO [([CFloat], Int)]
 withMockBindings action = do
   mockBuffer <- newIORef []
   let mockBindings = CBindings {
-    create_loopnaut = do
+    create_looper = do
       return (error "mock Ptr Buffer"),
     set_buffer = \ _ buffer len -> do
       modifyIORef mockBuffer (\ acc -> acc ++ [(buffer, len)])

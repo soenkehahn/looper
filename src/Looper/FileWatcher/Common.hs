@@ -1,6 +1,6 @@
 {-# LANGUAGE RankNTypes #-}
 
-module Loopnaut.FileWatcher.Common where
+module Looper.FileWatcher.Common where
 
 import Control.Concurrent
 import Control.Exception
