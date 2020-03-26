@@ -15,6 +15,7 @@ import System.IO.Silently
 import Test.Hspec
 import Test.Mockery.Directory
 import Test.Utils
+import qualified Data.Vector.Storable as Vec
 
 spec :: Spec
 spec = describe "LooperSpec" $ around_ (hSilence [stderr]) $ do
@@ -22,15 +23,15 @@ spec = describe "LooperSpec" $ around_ (hSilence [stderr]) $ do
     it "plays back a buffer" $ do
       [(array, len)] <- withMockBindings $ \ bindings -> do
         buffer <- create_looper bindings
-        setBuffer bindings buffer [1, 2, 3]
+        setBuffer bindings buffer (Vec.fromList [1, 2, 3])
       len `shouldBe` 3
       array `shouldBe` [1, 2, 3]
 
     it "allows to set a new buffer" $ do
       (last -> (array, len)) <- withMockBindings $ \ bindings -> do
         buffer <- create_looper bindings
-        setBuffer bindings buffer [1, 2, 3]
-        setBuffer bindings buffer [4, 5, 6, 7]
+        setBuffer bindings buffer (Vec.fromList [1, 2, 3])
+        setBuffer bindings buffer (Vec.fromList [4, 5, 6, 7])
       len `shouldBe` 4
       array `shouldBe` [4, 5, 6, 7]
 

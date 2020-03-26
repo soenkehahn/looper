@@ -21,18 +21,23 @@ import Looper.File.Executable
 import Looper.File.SndFile
 import Looper.FileWatcher.Common
 import System.Directory
+import Data.Vector.Storable (Vector)
+import qualified Data.Vector.Storable as Vec
 import System.IO
 
-allocateList :: Storable a => [a] -> IO (Ptr a, Int)
-allocateList list = do
-  let len = length list
-  array <- mallocArray len
-  pokeArray array list
-  return (array, len)
+convertToCArray :: Vector Double -> IO (Ptr CFloat, Int)
+convertToCArray vector = do
+  array <- mallocArray $ Vec.length vector
+  let inner :: Int -> Double -> IO Int
+      inner i sample = do
+        pokeElemOff array i (realToFrac sample)
+        return (i + 1)
+  Vec.foldM'_ inner 0 vector
+  return (array, Vec.length vector)
 
-setBuffer :: CBindings -> Ptr CLooper -> [CFloat] -> IO ()
+setBuffer :: CBindings -> Ptr CLooper -> Vector Double -> IO ()
 setBuffer bindings looper list = do
-  (array, len) <- allocateList list
+  (array, len) <- convertToCArray list
   set_buffer bindings looper array len
 
 run :: CBindings -> FileWatcher -> CliArgs -> IO ()
@@ -62,13 +67,13 @@ updateLooper bindings looper file changedFile = catchExceptions $ do
     throwIO $ ErrorCall ("file not found: " ++ file)
   buffer <- readFromFile file
   hPutStrLn stderr "done"
-  setBuffer bindings looper (map realToFrac buffer)
+  setBuffer bindings looper buffer
 
 catchExceptions :: IO () -> IO ()
 catchExceptions action = catch action $ \ (exception :: SomeException) -> do
   hPutStrLn stderr (show exception)
 
-readFromFile :: FilePath -> IO [Double]
+readFromFile :: FilePath -> IO (Vector Double)
 readFromFile file = do
   fromExecutable <- readFromExecutable file
   case fromExecutable of
