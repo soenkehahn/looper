@@ -4,10 +4,12 @@ ghc-options:
   - -Wall
   - -Wno-name-shadowing
   - -threaded
+  - -O2
 
 dependencies:
   - base
-  - deepseq
+  - bytestring
+  - bytestring-conversion
   - directory
   - filepath
   - getopt-generics

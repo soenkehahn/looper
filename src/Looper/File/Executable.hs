@@ -1,34 +1,39 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ViewPatterns #-}
 
-module Looper.File.Executable where
+module Looper.File.Executable (
+  FromExecutable(..),
+  readFromExecutable,
+) where
 
-import Control.DeepSeq
 import Control.Exception
-import Data.List
+import Data.ByteString.Conversion
+import Data.IORef
+import Data.String.Conversions
+import Data.Vector.Storable (Vector)
+import qualified Data.ByteString as BS
+import qualified Data.ByteString.Char8 as Char8
+import qualified Data.Vector.Storable as Vec
 import System.Exit
-import System.IO
+import System.FilePath
 import System.IO.Error
 import System.Process
-import Text.Read
-import System.FilePath
 
 data FromExecutable
-  = ExecutableSuccess [Double]
+  = ExecutableSuccess (Vector Double)
   | PermissionError
   | ExecutableDecodingError String
 
 readFromExecutable :: FilePath -> IO FromExecutable
 readFromExecutable file = do
   output <- catchPermissionErrors $ do
-    (stdout, exitCode) <- readFromProcess ("." </> file)
-    return (exitCode, stdout)
+    readFromProcess ("." </> file)
   return $ case output of
     Nothing -> PermissionError
     Just (ExitFailure exitCode, _) ->
       ExecutableDecodingError (file ++ " failed with exit code " ++ show exitCode)
-    Just (ExitSuccess, output) -> case parseResult file output of
-      Left error -> ExecutableDecodingError error
-      Right samples -> ExecutableSuccess samples
+    Just (ExitSuccess, output) ->
+      either ExecutableDecodingError ExecutableSuccess output
 
 catchPermissionErrors :: IO a -> IO (Maybe a)
 catchPermissionErrors action =
@@ -37,24 +42,30 @@ catchPermissionErrors action =
       then return Nothing
       else throwIO e
 
-readFromProcess :: FilePath -> IO (String, ExitCode)
+readFromProcess :: FilePath -> IO (ExitCode, Either String (Vector Double))
 readFromProcess file = do
   let createProcess = (proc file []){
     std_out = CreatePipe
   }
   withCreateProcess createProcess $ \ Nothing (Just stdoutHandle) Nothing processHandle -> do
-    stdout <- hGetContents stdoutHandle
-    deepseq stdout (return ())
+    string <- BS.hGetContents stdoutHandle
     exitCode <- waitForProcess processHandle
-    return (stdout, exitCode)
+    vector <- parse file string
+    return (exitCode, vector)
 
-parseResult :: FilePath -> String -> Either String [Double]
-parseResult file = mapM parseLine . lines
-  where
-    parseLine :: String -> Either String Double
-    parseLine line = case readMaybe line of
-      Nothing -> Left $ intercalate "\n" $
-        (file ++ " wrote a line to stdout that cannot be parsed as a number:") :
-        line :
-        []
-      Just result -> return result
+parse :: FilePath -> BS.ByteString -> IO (Either String (Vector Double))
+parse file string = do
+  errorRef <- newIORef Nothing
+  let inner string = do
+        let (line, BS.drop 1 -> rest) = Char8.break (== '\n') string
+        case fromByteString line :: Maybe Double of
+          Nothing -> do
+            writeIORef errorRef $ Just $
+              file ++ " wrote a line to stdout that cannot be parsed as a number:\n" ++ cs line
+            return Nothing
+          Just sample -> return $ Just (sample, rest)
+  vector <- Vec.unfoldrNM (Char8.count '\n' string) inner string
+  error <- readIORef errorRef
+  return $ case error of
+    Just error -> Left error
+    Nothing -> Right vector
