@@ -5,6 +5,9 @@ module Looper (
   setBuffer,
   run,
   withRun,
+
+  -- exported for testing
+  _warnAboutInvalidSamples,
 ) where
 
 import Control.Concurrent
@@ -66,7 +69,6 @@ updateLooper bindings looper file changedFile = catchExceptions $ do
   when (not exists) $ do
     throwIO $ ErrorCall ("file not found: " ++ file)
   buffer <- readFromFile file
-  hPutStrLn stderr "done"
   setBuffer bindings looper buffer
 
 catchExceptions :: IO () -> IO ()
@@ -76,7 +78,7 @@ catchExceptions action = catch action $ \ (exception :: SomeException) -> do
 readFromFile :: FilePath -> IO (Vector Double)
 readFromFile file = do
   fromExecutable <- readFromExecutable file
-  case fromExecutable of
+  result <- case fromExecutable of
     ExecutableSuccess result -> return result
     ExecutableDecodingError error -> throwIO $ ErrorCall error
     PermissionError -> do
@@ -89,3 +91,17 @@ readFromFile file = do
             "nor is it a sound file:" :
             ("  " ++ error) :
             []
+  hPutStrLn stderr "done"
+  _warnAboutInvalidSamples result
+  return result
+
+_warnAboutInvalidSamples :: Vector Double -> IO ()
+_warnAboutInvalidSamples vector =
+  when (Vec.length vector > 0) $ do
+    let max = Vec.maximum vector
+        min = Vec.minimum vector
+    when (min < -1 || max > 1) $ do
+      hPutStrLn stderr $
+        "warning: some audio samples are outside the valid range:\n" ++
+        "max: " ++ show max ++
+        ", min: " ++ show min

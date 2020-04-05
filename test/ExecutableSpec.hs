@@ -83,6 +83,18 @@ spec = describe "ExecutableSpec" $ around_ inTempDirectory $ around_ (hSilence [
           return ()
       output `shouldBe` "reading audio snippet from foo.sh...\nfoo\ndone\n"
 
+    it "warns about samples outside of the valid range" $ do
+      output <- hCapture_ [stderr] $
+        handle (\ (_ :: ErrorCall) -> return ()) $ do
+          _ <- testRunWithFile True [i|
+            #!/usr/bin/env bash
+            echo 42
+            echo -23
+          |] (return ())
+          return ()
+      output `shouldBe` "reading audio snippet from foo.sh...\ndone\n" ++
+        "warning: some audio samples are outside the valid range:\nmax: 42.0, min: -23.0\n"
+
   describe "executable failures with non-zero exit codes" $ do
     describe "when the initial executable fails" $ do
       it "plays nothing but waits for the executable to change" $ do
