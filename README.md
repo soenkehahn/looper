@@ -36,10 +36,47 @@ program over and over again and listening to the results.
 
 ## Installation
 
-You can install `looper` with [stack](https://haskellstack.org/):
+`looper` runs on linux and mac. These are installation instructions that work on ubuntu-19.10.
+
+First, you need to install some looper dependencies and `curl`:
+
+```bash
+sudo apt-get update
+sudo apt-get install --yes curl libsndfile1-dev portaudio19-dev
+```
+
+`looper` is written in Haskell and you need to install the Haskell build tool
+[stack](https://haskellstack.org/) to build and install it. Here's how you can
+get `stack`:
+
+```bash
+curl -sSL https://get.haskellstack.org/ | sh
+```
+
+Then you need to clone the `looper` repo:
 
 ```bash
 git clone https://github.com/soenkehahn/looper
 cd looper
+```
+
+And install looper with:
+
+```bash
 stack install
+```
+
+`stack` installs executables into `$HOME/.local/bin`. So you need to make sure that that's
+added to your `$PATH`. If you're using `bash` you could do that with:
+
+```bash
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> $HOME/.bashrc
+```
+
+You need to restart bash for this to take effect.
+
+Now you can check that looper is installed with e.g.:
+
+```bash
+looper --help
 ```
