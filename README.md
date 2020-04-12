@@ -36,7 +36,21 @@ program over and over again and listening to the results.
 
 ## Installation
 
-`looper` runs on linux and mac. These are installation instructions that work on ubuntu-19.10.
+`looper` runs on linux and mac.
+
+### Linux
+
+There's pre-built binaries for linux [here](https://github.com/soenkehahn/looper/releases).
+
+You will need to install some runtime dependencies to run `looper`. On ubuntu you can do:
+
+```bash
+sudo apt install libportaudio2 libsndfile1 libgmp10
+```
+
+### Building from source
+
+These are instructions that work on ubuntu-19.10.
 
 First, you need to install some looper dependencies and `curl`:
 
