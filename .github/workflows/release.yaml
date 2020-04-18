@@ -1,0 +1,65 @@
+name: release
+on:
+  push:
+    branches:
+      - master
+jobs:
+  build:
+    runs-on: ubuntu-18.04
+    steps:
+      - name: cache ~/.stack
+        uses: actions/cache@v1
+        with:
+          path: ~/.stack
+          key: ${{ runner.os }}-stack
+      - name: checkout looper
+        uses: actions/checkout@v2
+      - name: install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes curl libsndfile1-dev portaudio19-dev atool
+      - name: build release binary
+        run: |
+          stack test --ghc-options=-Werror
+          stack install --local-bin-path dist
+          cd dist
+          apack looper-x86_64.zip looper
+          apack looper-x86_64.tar.gz looper
+          cd ..
+      - name: create github release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: commit-${{ github.sha }}
+          release_name: commit-${{ github.sha }}
+          draft: false
+          prerelease: false
+      - name: upload binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./dist/looper
+          asset_name: looper
+          asset_content_type: application/x-elf
+      - name: upload zip file
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./dist/looper-x86_64.zip
+          asset_name: looper-x86_64.zip
+          asset_content_type: application/zip
+      - name: upload tar file
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./dist/looper-x86_64.tar.gz
+          asset_name: looper-x86_64.tar.gz
+          asset_content_type: application/gzip

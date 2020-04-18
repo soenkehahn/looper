@@ -25,7 +25,7 @@ waitForAndFork :: IO Bool -> IO () -> IO ()
 waitForAndFork action concurrentAction = do
   waiter <- newEmptyMVar
   _ <- forkIO (concurrentAction `finally` putMVar waiter ())
-  result <- timeout 1000000 $ fix $ \ loop -> do
+  result <- timeout 10000000 $ fix $ \ loop -> do
     condition <- action
     if condition
       then return ()

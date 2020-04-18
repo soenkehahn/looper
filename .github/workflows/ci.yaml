@@ -1,0 +1,22 @@
+name: ci
+on:
+  pull_request:
+  push:
+jobs:
+  build:
+    runs-on: ubuntu-18.04
+    steps:
+      - name: cache ~/.stack
+        uses: actions/cache@v1
+        with:
+          path: ~/.stack
+          key: ${{ runner.os }}-stack
+      - name: checkout looper
+        uses: actions/checkout@v2
+      - name: install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes curl libsndfile1-dev portaudio19-dev
+      - name: run tests
+        run: |
+          stack test --ghc-options=-Werror
