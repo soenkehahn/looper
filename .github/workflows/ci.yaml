@@ -1,4 +1,4 @@
-name: build
+name: ci
 on:
   pull_request:
   push:
@@ -6,67 +6,17 @@ jobs:
   build:
     runs-on: ubuntu-18.04
     steps:
-    - name: install system dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install --yes curl libsndfile1-dev portaudio19-dev atool
-    - name: checkout looper
-      uses: actions/checkout@v2
-    - name: cache ~/.stack
-      uses: actions/cache@v1
-      with:
-        path: ~/.stack
-        key: ${{ runner.os }}-stack
-    - name: run tests
-      run: |
-        stack test --ghc-options=-Werror
-
-    - name: build release binary
-      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-      run: |
-        stack install --local-bin-path dist
-        cd dist
-        apack looper-x86_64.zip looper
-        apack looper-x86_64.tar.gz looper
-        cd ..
-    - name: create github release
-      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: commit-${{ github.sha }}
-        release_name: commit-${{ github.sha }}
-        draft: true
-        prerelease: false
-    - name: upload binary
-      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dist/looper
-        asset_name: looper
-        asset_content_type: application/x-elf
-    - name: upload zip file
-      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dist/looper-x86_64.zip
-        asset_name: looper-x86_64.zip
-        asset_content_type: application/zip
-    - name: upload tar file
-      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dist/looper-x86_64.tar.gz
-        asset_name: looper-x86_64.tar.gz
-        asset_content_type: application/gzip
+      - name: checkout looper
+        uses: actions/checkout@v2
+      - name: cache ~/.stack
+        uses: actions/cache@v1
+        with:
+          path: ~/.stack
+          key: ${{ runner.os }}-stack
+      - name: install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes curl libsndfile1-dev portaudio19-dev
+      - name: run tests
+        run: |
+          stack test --ghc-options=-Werror
