@@ -7,13 +7,13 @@ jobs:
   build:
     runs-on: ubuntu-18.04
     steps:
-      - name: checkout looper
-        uses: actions/checkout@v2
       - name: cache ~/.stack
         uses: actions/cache@v1
         with:
           path: ~/.stack
           key: ${{ runner.os }}-stack
+      - name: checkout looper
+        uses: actions/checkout@v2
       - name: install system dependencies
         run: |
           sudo apt-get update
