@@ -27,7 +27,6 @@ jobs:
           apack looper-x86_64.tar.gz looper
           cd ..
       - name: create github release
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         id: create_release
         uses: actions/create-release@v1
         env:
