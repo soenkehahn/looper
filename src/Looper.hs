@@ -108,5 +108,5 @@ _warnAboutInvalidSamples vector =
     when (min < -1 || max > 1) $ do
       hPutStrLn stderr $
         "warning: some audio samples are outside the valid range:\n" ++
-        "max: " ++ show max ++
-        ", min: " ++ show min
+        "min: " ++ show min ++
+        ", max: " ++ show max

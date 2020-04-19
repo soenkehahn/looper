@@ -75,12 +75,12 @@ spec = describe "LooperSpec" $ around_ (hSilence [stderr]) $ do
     it "warns about samples above 1" $ do
       output <- hCapture_ [stderr] $ _warnAboutInvalidSamples $ Vec.fromList [1.2, 0]
       output `shouldBe`
-        "warning: some audio samples are outside the valid range:\nmax: 1.2, min: 0.0\n"
+        "warning: some audio samples are outside the valid range:\nmin: 0.0, max: 1.2\n"
 
     it "warns about samples below -1" $ do
       output <- hCapture_ [stderr] $ _warnAboutInvalidSamples $ Vec.fromList [-1.2, 0]
       output `shouldBe`
-        "warning: some audio samples are outside the valid range:\nmax: 0.0, min: -1.2\n"
+        "warning: some audio samples are outside the valid range:\nmin: -1.2, max: 0.0\n"
 
     it "doesn't warn when all the samples are in range" $ do
       output <- hCapture_ [stderr] $ _warnAboutInvalidSamples $ Vec.fromList [-1, 0, 1]

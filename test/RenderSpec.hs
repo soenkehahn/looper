@@ -74,6 +74,6 @@ spec = describe "RenderSpec" $ around_ inTempDirectory $ do
       output <- hCapture_ [stderr] $ renderSampleToFile [-23, 42] "rendered.wav"
       let expected = unlines $
             "warning: some audio samples are outside the valid range:" :
-            "max: 42.0, min: -23.0" :
+            "min: -23.0, max: 42.0" :
             []
       output `shouldBe` expected
