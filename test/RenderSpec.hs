@@ -70,7 +70,7 @@ spec = describe "RenderSpec" $ around_ inTempDirectory $ do
       renderToFile "rendered.unknown" `shouldThrow`
         errorCall "unknown audio file format: .unknown\nplease use .wav or .ogg"
 
-    it "warns about invalid samples" $ do
+    it "warns about samples outside of the valid range" $ do
       output <- hCapture_ [stderr] $ renderSampleToFile [-23, 42] "rendered.wav"
       let expected = unlines $
             "warning: some audio samples are outside the valid range:" :
