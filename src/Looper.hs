@@ -49,6 +49,7 @@ run bindings fileWatcher cliArgs = case cliArgs of
     forever $ threadDelay 1000000
   Render file outputFile -> do
     buffer <- readFromFile file
+    _warnAboutInvalidSamples buffer
     writeToSndFile outputFile buffer
 
 withRun :: CBindings -> FileWatcher -> FilePath -> [FilePath] -> IO a -> IO a
@@ -61,15 +62,22 @@ withRun bindings fileWatcher file watched action = do
 
 updateLooper :: CBindings -> Ptr CLooper -> FilePath -> FilePath -> IO ()
 updateLooper bindings looper file changedFile = catchExceptions $ do
-  hPutStr stderr $
-    (if file /= changedFile then changedFile ++ " changed, " else "") ++
-    "reading audio snippet from " ++ file ++ "...\n"
-  hFlush stderr
   exists <- doesFileExist file
   when (not exists) $ do
     throwIO $ ErrorCall ("file not found: " ++ file)
-  buffer <- readFromFile file
+  buffer <- addOutput file changedFile $ readFromFile file
+  _warnAboutInvalidSamples buffer
   setBuffer bindings looper buffer
+
+addOutput :: FilePath -> FilePath -> IO a -> IO a
+addOutput file changedFile action = do
+  hPutStrLn stderr $
+    (if file /= changedFile then changedFile ++ " changed, " else "") ++
+    "reading audio snippet from " ++ file ++ "..."
+  hFlush stderr
+  result <- action
+  hPutStrLn stderr "done"
+  return result
 
 catchExceptions :: IO () -> IO ()
 catchExceptions action = catch action $ \ (exception :: SomeException) -> do
@@ -78,7 +86,7 @@ catchExceptions action = catch action $ \ (exception :: SomeException) -> do
 readFromFile :: FilePath -> IO (Vector Double)
 readFromFile file = do
   fromExecutable <- readFromExecutable file
-  result <- case fromExecutable of
+  case fromExecutable of
     ExecutableSuccess result -> return result
     ExecutableDecodingError error -> throwIO $ ErrorCall error
     PermissionError -> do
@@ -91,9 +99,6 @@ readFromFile file = do
             "nor is it a sound file:" :
             ("  " ++ error) :
             []
-  hPutStrLn stderr "done"
-  _warnAboutInvalidSamples result
-  return result
 
 _warnAboutInvalidSamples :: Vector Double -> IO ()
 _warnAboutInvalidSamples vector =
