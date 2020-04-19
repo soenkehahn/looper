@@ -65,12 +65,12 @@ updateLooper bindings looper file changedFile = catchExceptions $ do
   exists <- doesFileExist file
   when (not exists) $ do
     throwIO $ ErrorCall ("file not found: " ++ file)
-  buffer <- addOutput file changedFile $ readFromFile file
+  buffer <- addLogging file changedFile $ readFromFile file
   _warnAboutInvalidSamples buffer
   setBuffer bindings looper buffer
 
-addOutput :: FilePath -> FilePath -> IO a -> IO a
-addOutput file changedFile action = do
+addLogging :: FilePath -> FilePath -> IO a -> IO a
+addLogging file changedFile action = do
   hPutStrLn stderr $
     (if file /= changedFile then changedFile ++ " changed, " else "") ++
     "reading audio snippet from " ++ file ++ "..."
