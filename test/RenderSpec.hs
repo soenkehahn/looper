@@ -3,8 +3,6 @@
 
 module RenderSpec where
 
-import Data.String.Interpolate
-import Data.String.Interpolate.Util
 import Development.Shake
 import Looper
 import Looper.Cli
@@ -13,15 +11,18 @@ import Sound.File.Sndfile.Buffer.Vector as BV
 import Test.Hspec
 import Test.Mockery.Directory
 import Test.Utils
+import System.IO.Silently
+import System.IO
 
-renderFile :: FilePath -> IO ()
-renderFile outputFile = do
-  Prelude.writeFile "foo.sh" $ unindent [i|
-    #!/usr/bin/env bash
-    echo 1
-    echo 2
-    echo 3
-  |]
+renderToFile :: FilePath -> IO ()
+renderToFile outputFile = do
+  renderSampleToFile [0.1, 0.2, 0.3] outputFile
+
+renderSampleToFile :: [Double] -> FilePath -> IO ()
+renderSampleToFile samples outputFile = do
+  Prelude.writeFile "foo.sh" $
+    "#!/usr/bin/env bash\n" ++
+    concat (map (\ sample -> "echo " ++ show sample ++ "\n") samples)
   unit $ cmd "chmod +x foo.sh"
   _ <- withMockBindings $ \ bindings -> do
     (mockFileWatcher, _mockFileSystem) <- mkMockFileWatcher
@@ -32,7 +33,7 @@ spec :: Spec
 spec = describe "RenderSpec" $ around_ inTempDirectory $ do
   describe "when passing in an executable" $ do
     it "allows to render into an ogg file" $ do
-      renderFile "rendered.ogg"
+      renderToFile "rendered.ogg"
       (info, _ :: Maybe (BV.Buffer Double)) <- Snd.readFile "rendered.ogg"
       let expected = Info {
             frames = 3,
@@ -49,7 +50,7 @@ spec = describe "RenderSpec" $ around_ inTempDirectory $ do
       info `shouldBe` expected
 
     it "allows to render into a wav file" $ do
-      renderFile "rendered.wav"
+      renderToFile "rendered.wav"
       (info, _ :: Maybe (BV.Buffer Double)) <- Snd.readFile "rendered.wav"
       let expected = Info {
             frames = 3,
@@ -66,5 +67,13 @@ spec = describe "RenderSpec" $ around_ inTempDirectory $ do
       info `shouldBe` expected
 
     it "throws a good error when trying to render into a file with an unknown extension" $ do
-      renderFile "rendered.unknown" `shouldThrow`
+      renderToFile "rendered.unknown" `shouldThrow`
         errorCall "unknown audio file format: .unknown\nplease use .wav or .ogg"
+
+    it "warns about samples outside of the valid range" $ do
+      output <- hCapture_ [stderr] $ renderSampleToFile [-23, 42] "rendered.wav"
+      let expected = unlines $
+            "warning: some audio samples are outside the valid range:" :
+            "min: -23.0, max: 42.0" :
+            []
+      output `shouldBe` expected

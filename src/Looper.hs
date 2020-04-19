@@ -5,6 +5,9 @@ module Looper (
   setBuffer,
   run,
   withRun,
+
+  -- exported for testing
+  _warnAboutInvalidSamples,
 ) where
 
 import Control.Concurrent
@@ -46,6 +49,7 @@ run bindings fileWatcher cliArgs = case cliArgs of
     forever $ threadDelay 1000000
   Render file outputFile -> do
     buffer <- readFromFile file
+    _warnAboutInvalidSamples buffer
     writeToSndFile outputFile buffer
 
 withRun :: CBindings -> FileWatcher -> FilePath -> [FilePath] -> IO a -> IO a
@@ -58,16 +62,22 @@ withRun bindings fileWatcher file watched action = do
 
 updateLooper :: CBindings -> Ptr CLooper -> FilePath -> FilePath -> IO ()
 updateLooper bindings looper file changedFile = catchExceptions $ do
-  hPutStr stderr $
-    (if file /= changedFile then changedFile ++ " changed, " else "") ++
-    "reading audio snippet from " ++ file ++ "...\n"
-  hFlush stderr
   exists <- doesFileExist file
   when (not exists) $ do
     throwIO $ ErrorCall ("file not found: " ++ file)
-  buffer <- readFromFile file
-  hPutStrLn stderr "done"
+  buffer <- addLogging file changedFile $ readFromFile file
+  _warnAboutInvalidSamples buffer
   setBuffer bindings looper buffer
+
+addLogging :: FilePath -> FilePath -> IO a -> IO a
+addLogging file changedFile action = do
+  hPutStrLn stderr $
+    (if file /= changedFile then changedFile ++ " changed, " else "") ++
+    "reading audio snippet from " ++ file ++ "..."
+  hFlush stderr
+  result <- action
+  hPutStrLn stderr "done"
+  return result
 
 catchExceptions :: IO () -> IO ()
 catchExceptions action = catch action $ \ (exception :: SomeException) -> do
@@ -89,3 +99,14 @@ readFromFile file = do
             "nor is it a sound file:" :
             ("  " ++ error) :
             []
+
+_warnAboutInvalidSamples :: Vector Double -> IO ()
+_warnAboutInvalidSamples vector =
+  when (Vec.length vector > 0) $ do
+    let max = Vec.maximum vector
+        min = Vec.minimum vector
+    when (min < -1 || max > 1) $ do
+      hPutStrLn stderr $
+        "warning: some audio samples are outside the valid range:\n" ++
+        "min: " ++ show min ++
+        ", max: " ++ show max

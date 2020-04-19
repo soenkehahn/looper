@@ -71,6 +71,21 @@ spec = describe "LooperSpec" $ around_ (hSilence [stderr]) $ do
       snd (last buffers) `shouldBe` 221
       take 3 (fst (last buffers)) `shouldBe` [5.5871088e-2,0.16261064,0.26740527]
 
+  describe "_warnAboutInvalidSamples" $ do
+    it "warns about samples above 1" $ do
+      output <- hCapture_ [stderr] $ _warnAboutInvalidSamples $ Vec.fromList [1.2, 0]
+      output `shouldBe`
+        "warning: some audio samples are outside the valid range:\nmin: 0.0, max: 1.2\n"
+
+    it "warns about samples below -1" $ do
+      output <- hCapture_ [stderr] $ _warnAboutInvalidSamples $ Vec.fromList [-1.2, 0]
+      output `shouldBe`
+        "warning: some audio samples are outside the valid range:\nmin: -1.2, max: 0.0\n"
+
+    it "doesn't warn when all the samples are in range" $ do
+      output <- hCapture_ [stderr] $ _warnAboutInvalidSamples $ Vec.fromList [-1, 0, 1]
+      output `shouldBe` ""
+
 testWhileLooperIsRunning :: (MockFileSystem -> IO ()) -> IO [([CFloat], Int)]
 testWhileLooperIsRunning test = do
   repoDir <- getCurrentDirectory
