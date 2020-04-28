@@ -3,7 +3,6 @@
 
 module RenderSpec where
 
-import Development.Shake
 import Looper
 import Looper.Cli
 import Sound.File.Sndfile as Snd
