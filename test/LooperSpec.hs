@@ -109,6 +109,11 @@ spec = describe "LooperSpec" $ around_ (hSilence [stderr]) $ do
         vector <- _readFromFile "./foo.sh" Normalize
         vector `shouldBe` Vec.fromList [-1, 0.1]
 
+      it "works for silent audio snippets" $ do
+        writeSamplesToScript [0, 0, 0] "foo.sh"
+        vector <- _readFromFile "./foo.sh" Normalize
+        vector `shouldBe` Vec.fromList [0, 0, 0]
+
 testWhileLooperIsRunning :: (MockFileSystem -> IO ()) -> IO [([CFloat], Int)]
 testWhileLooperIsRunning test = do
   repoDir <- getCurrentDirectory

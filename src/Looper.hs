@@ -121,4 +121,6 @@ normalize normalization vector = case normalization of
   Normalize ->
     let negativeInfinity = -1 / 0
         maximum = Vec.foldl' (\ acc sample -> max acc (abs sample)) negativeInfinity vector
-    in Vec.map (/ maximum) vector
+    in if maximum == 0
+      then vector
+      else Vec.map (/ maximum) vector
