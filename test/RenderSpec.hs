@@ -3,7 +3,6 @@
 
 module RenderSpec where
 
-import Development.Shake
 import Looper
 import Looper.Cli
 import Sound.File.Sndfile as Snd
@@ -16,17 +15,14 @@ import System.IO
 
 renderToFile :: FilePath -> IO ()
 renderToFile outputFile = do
-  renderSampleToFile [0.1, 0.2, 0.3] outputFile
+  renderSamplesToFile [0.1, 0.2, 0.3] outputFile
 
-renderSampleToFile :: [Double] -> FilePath -> IO ()
-renderSampleToFile samples outputFile = do
-  Prelude.writeFile "foo.sh" $
-    "#!/usr/bin/env bash\n" ++
-    concat (map (\ sample -> "echo " ++ show sample ++ "\n") samples)
-  unit $ cmd "chmod +x foo.sh"
+renderSamplesToFile :: [Double] -> FilePath -> IO ()
+renderSamplesToFile samples outputFile = do
+  writeSamplesToScript samples "foo.sh"
   _ <- withMockBindings $ \ bindings -> do
     (mockFileWatcher, _mockFileSystem) <- mkMockFileWatcher
-    run bindings mockFileWatcher (Render "foo.sh" outputFile)
+    run bindings mockFileWatcher (Render "foo.sh" outputFile DontNormalize)
   return ()
 
 spec :: Spec
@@ -71,7 +67,7 @@ spec = describe "RenderSpec" $ around_ inTempDirectory $ do
         errorCall "unknown audio file format: .unknown\nplease use .wav or .ogg"
 
     it "warns about samples outside of the valid range" $ do
-      output <- hCapture_ [stderr] $ renderSampleToFile [-23, 42] "rendered.wav"
+      output <- hCapture_ [stderr] $ renderSamplesToFile [-23, 42] "rendered.wav"
       let expected = unlines $
             "warning: some audio samples are outside the valid range:" :
             "min: -23.0, max: 42.0" :

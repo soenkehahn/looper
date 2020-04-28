@@ -14,7 +14,7 @@ spec = describe "CliSpec" $ do
   describe "withCliArgs" $ do
     it "parses the main file as a positional argument" $ do
       testWithArgs ["foo"] $ \ args -> do
-        args `shouldBe` Loop "foo" []
+        args `shouldBe` Loop "foo" [] DontNormalize
 
     it "complains about no positional argument" $ do
       let command = testWithArgs [] $ \ _ -> do
@@ -37,4 +37,17 @@ spec = describe "CliSpec" $ do
 
     it "allows to pass in an output file with --render" $ do
       testWithArgs ["foo", "--render", "bar"] $ \ args -> do
-        args `shouldBe` Render "foo" "bar"
+        args `shouldBe` Render "foo" "bar" DontNormalize
+
+    describe "normalization" $ do
+      it "doesn't normalize by default" $ do
+        testWithArgs ["foo"] $ \ args -> do
+          cliArgsNormalization args `shouldBe` DontNormalize
+
+      it "allows to switch on normalization with --normalize" $ do
+        testWithArgs ["foo", "--normalize"] $ \ args -> do
+          cliArgsNormalization args `shouldBe` Normalize
+
+      it "accepts -n as a shortcut" $ do
+        testWithArgs ["foo", "-n"] $ \ args -> do
+          cliArgsNormalization args `shouldBe` Normalize

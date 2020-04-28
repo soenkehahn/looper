@@ -3,7 +3,7 @@ module Test.Utils where
 import Control.Concurrent
 import Data.IORef
 import Data.List (foldl')
-import Data.Map
+import Data.Map hiding (map)
 import Data.Traversable
 import Development.Shake
 import Foreign.C.Types
@@ -12,6 +12,13 @@ import Looper
 import Looper.CBindings
 import Looper.FileWatcher.Common
 import System.Timeout
+
+writeSamplesToScript :: [Double] -> FilePath -> IO ()
+writeSamplesToScript samples scriptFile = do
+  Prelude.writeFile scriptFile $
+    "#!/usr/bin/env bash\n" ++
+    concat (map (\ sample -> "echo " ++ show sample ++ "\n") samples)
+  unit $ cmd "chmod +x" scriptFile
 
 withMockBindings :: (CBindings -> IO ()) -> IO [([CFloat], Int)]
 withMockBindings action = do
@@ -36,7 +43,7 @@ timebox action = do
 testRun :: CBindings -> FilePath -> [FilePath] -> (MockFileSystem -> IO a) -> IO a
 testRun bindings file watched test = do
   (mockFileWatcher, mockFileSystem) <- mkMockFileWatcher
-  withRun bindings mockFileWatcher file watched $ do
+  withRun bindings mockFileWatcher file watched DontNormalize $ do
     test mockFileSystem
 
 data MockFileSystem = MockFileSystem (MVar (Map FilePath (FilePath -> IO ())))

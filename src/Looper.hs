@@ -8,6 +8,8 @@ module Looper (
 
   -- exported for testing
   _warnAboutInvalidSamples,
+  _readFromFile,
+  Normalization(..),
 ) where
 
 import Control.Concurrent
@@ -45,27 +47,28 @@ setBuffer bindings looper list = do
 
 run :: CBindings -> FileWatcher -> CliArgs -> IO ()
 run bindings fileWatcher cliArgs = case cliArgs of
-  Loop file watched -> withRun bindings fileWatcher file watched $ do
-    forever $ threadDelay 1000000
-  Render file outputFile -> do
-    buffer <- readFromFile file
+  Loop file watched normalization -> do
+    withRun bindings fileWatcher file watched normalization $ do
+      forever $ threadDelay 1000000
+  Render file outputFile normalization -> do
+    buffer <- _readFromFile file normalization
     _warnAboutInvalidSamples buffer
     writeToSndFile outputFile buffer
 
-withRun :: CBindings -> FileWatcher -> FilePath -> [FilePath] -> IO a -> IO a
-withRun bindings fileWatcher file watched action = do
+withRun :: CBindings -> FileWatcher -> FilePath -> [FilePath] -> Normalization -> IO a -> IO a
+withRun bindings fileWatcher file watched normalization action = do
   looper <- create_looper bindings
-  updateLooper bindings looper file file
+  updateLooper bindings looper file normalization file
   watchFiles fileWatcher (file : watched)
-    (\ changedFile -> updateLooper bindings looper file changedFile)
+    (\ changedFile -> updateLooper bindings looper file normalization changedFile)
     action
 
-updateLooper :: CBindings -> Ptr CLooper -> FilePath -> FilePath -> IO ()
-updateLooper bindings looper file changedFile = catchExceptions $ do
+updateLooper :: CBindings -> Ptr CLooper -> FilePath -> Normalization -> FilePath -> IO ()
+updateLooper bindings looper file normalization changedFile = catchExceptions $ do
   exists <- doesFileExist file
   when (not exists) $ do
     throwIO $ ErrorCall ("file not found: " ++ file)
-  buffer <- addLogging file changedFile $ readFromFile file
+  buffer <- addLogging file changedFile $ _readFromFile file normalization
   _warnAboutInvalidSamples buffer
   setBuffer bindings looper buffer
 
@@ -83,10 +86,10 @@ catchExceptions :: IO () -> IO ()
 catchExceptions action = catch action $ \ (exception :: SomeException) -> do
   hPutStrLn stderr (show exception)
 
-readFromFile :: FilePath -> IO (Vector Double)
-readFromFile file = do
+_readFromFile :: FilePath -> Normalization -> IO (Vector Double)
+_readFromFile file normalization = do
   fromExecutable <- readFromExecutable file
-  case fromExecutable of
+  vector <- case fromExecutable of
     ExecutableSuccess result -> return result
     ExecutableDecodingError error -> throwIO $ ErrorCall error
     PermissionError -> do
@@ -99,6 +102,7 @@ readFromFile file = do
             "nor is it a sound file:" :
             ("  " ++ error) :
             []
+  return $ normalize normalization vector
 
 _warnAboutInvalidSamples :: Vector Double -> IO ()
 _warnAboutInvalidSamples vector =
@@ -110,3 +114,13 @@ _warnAboutInvalidSamples vector =
         "warning: some audio samples are outside the valid range:\n" ++
         "min: " ++ show min ++
         ", max: " ++ show max
+
+normalize :: Normalization -> Vector Double -> Vector Double
+normalize normalization vector = case normalization of
+  DontNormalize -> vector
+  Normalize ->
+    let negativeInfinity = -1 / 0
+        maximum = Vec.foldl' (\ acc sample -> max acc (abs sample)) negativeInfinity vector
+    in if maximum == 0
+      then vector
+      else Vec.map (/ maximum) vector

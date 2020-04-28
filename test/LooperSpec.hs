@@ -1,11 +1,12 @@
 {-# OPTIONS_GHC -Wno-missing-fields #-}
 {-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE QuasiQuotes #-}
 
 module LooperSpec where
 
+import Data.IORef
 import Development.Shake
 import Foreign.C.Types
-import Data.IORef
 import Looper
 import Looper.CBindings
 import System.Directory
@@ -85,6 +86,33 @@ spec = describe "LooperSpec" $ around_ (hSilence [stderr]) $ do
     it "doesn't warn when all the samples are in range" $ do
       output <- hCapture_ [stderr] $ _warnAboutInvalidSamples $ Vec.fromList [-1, 0, 1]
       output `shouldBe` ""
+
+  describe "_readFromFile" $ around_ inTempDirectory $ do
+    it "reads audio from a file" $ do
+      writeSamplesToScript [1, 2, 3] "foo.sh"
+      vector <- _readFromFile "./foo.sh" DontNormalize
+      vector `shouldBe` Vec.fromList [1, 2, 3]
+
+    describe "when normalization is turned on" $ do
+      it "normalizes signals that are too low" $ do
+        writeSamplesToScript [0.5, -0.2, 0.1] "foo.sh"
+        vector <- _readFromFile "./foo.sh" Normalize
+        vector `shouldBe` Vec.fromList [1, -0.4, 0.2]
+
+      it "normalizes signals that are too loud" $ do
+        writeSamplesToScript [2, -0.2, 0.1] "foo.sh"
+        vector <- _readFromFile "./foo.sh" Normalize
+        vector `shouldBe` Vec.fromList [1, -0.1, 0.05]
+
+      it "works when the maximum amplitude is negative" $ do
+        writeSamplesToScript [-2, 0.2] "foo.sh"
+        vector <- _readFromFile "./foo.sh" Normalize
+        vector `shouldBe` Vec.fromList [-1, 0.1]
+
+      it "works for silent audio snippets" $ do
+        writeSamplesToScript [0, 0, 0] "foo.sh"
+        vector <- _readFromFile "./foo.sh" Normalize
+        vector `shouldBe` Vec.fromList [0, 0, 0]
 
 testWhileLooperIsRunning :: (MockFileSystem -> IO ()) -> IO [([CFloat], Int)]
 testWhileLooperIsRunning test = do
