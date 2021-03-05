@@ -97,7 +97,7 @@ looper --help
 
 ## Examples
 
-- There's a few small examples in the `./examples` folder.
+- There are a few small examples in the `./examples` folder.
 - I (Sönke) have toyed around with `looper` here: [https://github.com/soenkehahn/loops](loops).
 
 If you have created anything with `looper` that is available publicly, we should add it to this list. :)
