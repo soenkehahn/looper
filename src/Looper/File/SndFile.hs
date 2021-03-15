@@ -8,6 +8,9 @@ import Sound.File.Sndfile as Snd
 import Sound.File.Sndfile.Buffer.Vector
 import System.FilePath
 
+samplerate :: Int
+samplerate = 44100
+
 data FromSndfile
   = SndFileSuccess (Vector Double)
   | SndFileError String
@@ -38,7 +41,7 @@ writeToSndFile file vector = do
       "please use .wav or .ogg"
   let info = Info {
         frames = (Vec.length vector),
-        samplerate = 44100,
+        Snd.samplerate = Looper.File.SndFile.samplerate,
         channels = 1,
         format = format,
         sections = 1,
