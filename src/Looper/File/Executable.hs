@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ViewPatterns #-}
 
@@ -47,11 +48,15 @@ readFromProcess file = do
   let createProcess = (proc file []){
     std_out = CreatePipe
   }
-  withCreateProcess createProcess $ \ Nothing (Just stdoutHandle) Nothing processHandle -> do
-    string <- BS.hGetContents stdoutHandle
-    exitCode <- waitForProcess processHandle
-    vector <- parse file string
-    return (exitCode, vector)
+  withCreateProcess createProcess go
+  where
+    go Nothing (Just stdoutHandle) Nothing processHandle = do
+      string <- BS.hGetContents stdoutHandle
+      exitCode <- waitForProcess processHandle
+      vector <- parse file string
+      return (exitCode, vector)
+    go _ _ _ _ = do
+      throwIO $ ErrorCall "impossible: mismatching standard stream handles"
 
 parse :: FilePath -> BS.ByteString -> IO (Either String (Vector Double))
 parse file string = do
