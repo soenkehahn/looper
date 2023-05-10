@@ -51,7 +51,7 @@ spec = describe "ExecutableSpec" $ around_ inTempDirectory $ around_ (hSilence [
       let expected = unindent $ [i|
         foo.sh is neither an executable (the executable flag is not set)
         nor is it a sound file:
-          File contains data in an unknown format.|]
+          Format not recognised.|]
       output `shouldContain` expected
 
   describe "when the file does not exist" $ do
