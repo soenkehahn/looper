@@ -45,11 +45,11 @@ catchPermissionErrors action =
 
 readFromProcess :: FilePath -> IO (ExitCode, Either String (Vector Double))
 readFromProcess file = do
-  let createProcess = (proc file []){
-    std_out = CreatePipe
-  }
   withCreateProcess createProcess go
   where
+    createProcess = (proc file []){
+      std_out = CreatePipe
+    }
     go Nothing (Just stdoutHandle) Nothing processHandle = do
       string <- BS.hGetContents stdoutHandle
       exitCode <- waitForProcess processHandle
