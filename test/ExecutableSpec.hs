@@ -5,6 +5,7 @@ module ExecutableSpec where
 
 import Control.Exception
 import Control.Monad
+import Data.List (isInfixOf)
 import Data.String.Interpolate
 import Data.String.Interpolate.Util
 import Development.Shake
@@ -48,11 +49,14 @@ spec = describe "ExecutableSpec" $ around_ inTempDirectory $ around_ (hSilence [
       output <- hCapture_ [stderr] $ testRunWithFile False [i|
         foo
       |] (return ())
-      let expected = unindent $ [i|
-        foo.sh is neither an executable (the executable flag is not set)
-        nor is it a sound file:
-          Format not recognised.|]
-      output `shouldContain` expected
+      let expected libsndfileMessage = unindent $ [i|
+            foo.sh is neither an executable (the executable flag is not set)
+            nor is it a sound file:
+              #{libsndfileMessage}|]
+          isExpected output =
+            expected "Format not recognised." `isInfixOf` output ||
+            expected "File contains data in an unknown format." `isInfixOf` output
+      output `shouldSatisfy`  isExpected
 
   describe "when the file does not exist" $ do
     it "outputs a good error message" $ do
