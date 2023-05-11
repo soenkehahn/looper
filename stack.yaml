@@ -1,5 +1,4 @@
 resolver: lts-20.20
-
 packages:
   - .
 extra-deps:
